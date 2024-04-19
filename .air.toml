@@ -1,0 +1,6 @@
+[build]
+	cmd = "make generate build"
+	bin = "./sgs"
+	exclude_dir = ["node_modules", "view/static/dist"]
+	include_ext = ["go", "templ", "css", "sql"]
+	exclude_regex = ["_templ.go$"]

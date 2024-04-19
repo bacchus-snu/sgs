@@ -1,0 +1,14 @@
+workspaces: []
+  #- id: 0
+  #  idHash: random-hash
+  #  quotas:
+  #    limits.cpu: 0
+  #    limits.memory: 0
+  #    requests.cpu: 0
+  #    requests.memory: 0Gi
+  #    requests.storage: 0Gi
+  #    services.loadbalancers: 0
+  #    services.nodeports: 0
+  #    requests.nvidia.com/gpu: 0
+  #  users:
+  #    - yseong

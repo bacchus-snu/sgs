@@ -1,0 +1,40 @@
+package view
+
+templ page(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width,initial-scale=1"/>
+			<title>{ title }</title>
+			<link rel="stylesheet" href="/static/styles.css"/>
+		</head>
+		<body>
+			<header class="bg-blue-200 py-8">
+				<nav class="container mx-auto flex items-center px-4">
+					<h1 class="flex text-xl font-bold hover:text-gray-500">
+						<a class="content-center" href="/">
+							Bacchus SGS
+						</a>
+					</h1>
+					<a class="text-lg ml-auto hover:text-gray-500" href="https://sgs-docs.snucse.org">
+						Docs
+					</a>
+					<a class={ classButtonPrimary, "ml-4" } href="/request">
+						Workspace request
+					</a>
+				</nav>
+			</header>
+			<main class="container mx-auto p-4">
+				{ children... }
+			</main>
+		</body>
+		<footer class="container mx-auto p-4">
+			<hr class="my-2"/>
+			<p class="text-sm text-gray-500">
+				Powered by <a class="text-black" href="https://github.com/bacchus-snu/sgs">SGS</a>,
+				developed by <a class="text-black" href="https://bacchus.snucse.org">Bacchus</a>.
+			</p>
+		</footer>
+	</html>
+}

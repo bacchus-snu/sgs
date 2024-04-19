@@ -1,0 +1,6 @@
+# ensure template is always non-empty
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ws-empty

@@ -1,0 +1,61 @@
+package view
+
+import (
+	"slices"
+
+	"github.com/bacchus-snu/sgs/model"
+)
+
+templ PageRequestForm() {
+	@page("Workspace Request Form") {
+		<h1 class="mb-4 text-xl font-bold">Workspace request form</h1>
+		<form method="post">
+			<div class="grid grid-cols-3 gap-4">
+				<label class={ "col-start-1", classLabel } for="nodegroup">Nodegroup</label>
+				<select id="nodegroup" name="nodegroup" required>
+					<option value="">Select a nodegroup</option>
+					for _, ng := range model.Nodegroups {
+						if slices.Contains(ctxUser(ctx).Groups, string(ng)) {
+							<option value={ string(ng) }>{ string(ng) }</option>
+						}
+					}
+				</select>
+				<label class={ "col-start-1", classLabel } for="userdata">Reason</label>
+				<textarea class="resize-none" id="userdata" name="userdata" rows="10" required></textarea>
+				@reqQuotaInput("GPUs", "quota-gpu", "", model.ResGPURequest)
+				@reqQuotaInput("Storage", "quota-storage", "GiB", model.ResStorageRequest)
+				@reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU", model.ResCPURequest)
+				@reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU", model.ResCPULimit)
+				@reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB", model.ResMemoryRequest)
+				@reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB", model.ResMemoryLimit)
+			</div>
+			<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+			<div class="m-4 flex flex-col items-center justify-center">
+				<div class="col-start-2 mb-4 max-w-md text-sm text-gray-500">
+					<p>
+						If you are unsure about CPU or memory requirements, please leave them as 0.
+						We will update them based on your GPU quota.
+					</p>
+					<p>
+						Do not request guaranteed resources unless you are sure you need them.
+						Requesting guaranteed resources may result in longer wait times and unschedulable workloads.
+						<span class="font-bold">Underutilization of guaranteed resources will result in workspace termination</span>.
+					</p>
+				</div>
+				<button class={ classButtonPrimary } name="action" value="request">
+					Submit
+				</button>
+			</div>
+		</form>
+	}
+}
+
+templ reqQuotaInput(label, name, units string, res model.Resource) {
+	<label class={ "col-start-1", classLabel } for={ name }>
+		{ label }
+		if units != "" {
+			<span class="text-sm font-normal text-gray-500">{ units }</span>
+		}
+	</label>
+	<input class="h-fit" id={ name } name={ name } type="number" min="0" value="0" required/>
+}

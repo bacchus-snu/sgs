@@ -1,0 +1,196 @@
+package view
+
+import (
+	"fmt"
+	"slices"
+	"strings"
+	"encoding/base64"
+
+	"github.com/bacchus-snu/sgs/model"
+)
+
+var (
+	classDisabled = []string{"border-gray-300", "text-gray-600"}
+	classLabel    = []string{"py-2", "font-bold", "text-right"}
+
+	classButtonBase    = []string{"rounded", "px-4", "py-2", "font-bold", "outline", "outline-1"}
+	classButtonPrimary = append(classButtonBase,
+		[]string{"bg-blue-500", "text-white", "outline-blue-500", "hover:bg-blue-700", "focus:bg-blue-700"}...)
+	classButtonSecondary = append(classButtonBase,
+		[]string{"text-blue-600", "outline-blue-600", "hover:bg-blue-200", "focus:bg-blue-200"}...)
+	classButtonDestructive = append(classButtonBase,
+		[]string{"text-red-600", "outline-red-600", "hover:bg-red-200", "focus:bg-red-200"}...)
+)
+
+templ PageWorkspaceList(wss []*model.Workspace) {
+	@page("Workspaces") {
+		<h1 class="mb-4 text-xl font-bold">My workspaces</h1>
+		<ul class="mx-auto max-w-screen-md space-y-4">
+			for _, ws := range wss {
+				<a href={ templ.URL(fmt.Sprintf("/ws/%s", ws.ID.Hash())) }>
+					<li class="rounded p-2 hover:bg-gray-200">
+						<div>
+							<h1 class="inline text-lg font-mono font-bold">{ ws.ID.Hash() }</h1>
+							<h2 class="ml-2 inline text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
+							@wsStatusButton(ws)
+						</div>
+						<div>
+							<span class="text-gray-500">Users: { strings.Join(ws.Users, ", ") }</span>
+							<span class="text-gray-500">GPU quota: { fmt.Sprint(ws.Quotas[model.ResGPURequest]) }</span>
+						</div>
+					</li>
+				</a>
+			}
+		</ul>
+	}
+}
+
+// Apply changes to workspace, for rendering requested changes.
+func wsUpdated(ws *model.Workspace) *model.Workspace {
+	if ws.Request == nil {
+		return ws
+	}
+
+	newWS := *ws
+	newWS.Enabled = ws.Request.Enabled
+	newWS.Nodegroup = ws.Request.Nodegroup
+	newWS.Userdata = ws.Request.Userdata
+	newWS.Quotas = ws.Request.Quotas
+	newWS.Users = ws.Request.Users
+	return &newWS
+}
+
+templ PageWorkspaceDetails(ws *model.Workspace, kubeconfig string) {
+	@page("Workspace Details") {
+		@workspaceDetails(ws, wsUpdated(ws), kubeconfig)
+	}
+}
+
+// Render the status badge
+templ wsStatusButton(ws *model.Workspace) {
+	if ws.Enabled && ws.Request == nil {
+		// enabled (and created) and no pending requests: all good
+		<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled</span>
+	} else if !ws.Created {
+		// hasn't ever been enabled: pending approval
+		<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending approval</span>
+	} else if !ws.Enabled {
+		// created && !enabled: disabled by admin
+		<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled</span>
+	} else if ws.Enabled && ws.Request != nil {
+		// otherwise, enabled but has pending changes
+		<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending changes</span>
+	}
+}
+
+templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
+	<div>
+		<h1 class="inline text-lg font-bold font-mono">{ ws.ID.Hash() }</h1>
+		<h2 class="ml-2 inline text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
+		@wsStatusButton(ws)
+		if ws.Request != nil {
+			<div><span class="text-gray-500">Changes requested by</span> { ws.Request.ByUser }</div>
+		}
+	</div>
+	<form class="mt-4" method="post">
+		<div class="grid grid-cols-3 gap-4">
+			<span class="font-bold text-center col-start-2">Current</span>
+			<span class="font-bold text-center">Changes</span>
+			<label class={ classLabel }>Enabled</label>
+			<input class={ "justify-self-center", "self-center", classDisabled } type="checkbox" checked?={ ws.Enabled } disabled/>
+			<input class="justify-self-center self-center" type="checkbox" id="enabled" name="enabled" checked?={ newWS.Enabled }/>
+			<label class={ classLabel }>Nodegroup</label>
+			<select class={ classDisabled } disabled>
+				<option>{ string(ws.Nodegroup) }</option>
+			</select>
+			<select id="nodegroup" name="nodegroup" required>
+				<option value="">Select a nodegroup</option>
+				for _, ng := range model.Nodegroups {
+					if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(ng)) {
+						<option value={ string(ng) } selected?={ ng == newWS.Nodegroup }>{ string(ng) }</option>
+					}
+				}
+			</select>
+			<label class={ classLabel }>Reason</label>
+			<textarea class={ "resize-none", classDisabled } rows="10" disabled>{ ws.Userdata }</textarea>
+			<textarea class="resize-none" id="userdata" name="userdata" rows="10" required>{ newWS.Userdata }</textarea>
+			@wsQuotaInput("GPUs", "quota-gpu", "", model.ResGPURequest, ws, newWS)
+			@wsQuotaInput("Storage", "quota-storage", "GiB", model.ResStorageRequest, ws, newWS)
+			@wsQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU", model.ResCPURequest, ws, newWS)
+			@wsQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU", model.ResCPULimit, ws, newWS)
+			@wsQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB", model.ResMemoryRequest, ws, newWS)
+			@wsQuotaInput("Memory Limit", "quota-memory-limits", "GiB", model.ResMemoryLimit, ws, newWS)
+			<label class={ classLabel }>Users</label>
+			<div class="space-y-1">
+				for _, user := range ws.Users {
+					<input class={ "w-full", "h-fit", classDisabled } value={ user } disabled/>
+				}
+			</div>
+			<div class="flex flex-col space-y-1">
+				for i, user := range newWS.Users {
+					<div class="flex gap-x-2">
+						<input class="h-fit flex-1" id={ fmt.Sprintf("user-%d", i) } name={ fmt.Sprintf("user-%d", i) } value={ user } required/>
+						<button class={ classButtonDestructive } type="button" onclick={ wsRemoveUser() }>X</button>
+					</div>
+				}
+				<button class={ classButtonSecondary } type="button" onclick={ wsAddUser() }>Add user</button>
+			</div>
+		</div>
+		<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+		<div class="m-4 flex flex-wrap justify-center gap-4">
+			if slices.Contains(ws.Users, ctxUser(ctx).Username) {
+				// The user may be an admin & not in the user list in which case they're not allowed to request changes.
+				// They can outright update or delete the workspace instead.
+				<button class={ classButtonPrimary } name="action" value="request">
+					Request changes
+				</button>
+			}
+			if ctxUser(ctx).IsAdmin() {
+				<button class={ classButtonSecondary } name="action" value="update">
+					Update
+				</button>
+				<button class={ classButtonDestructive } name="action" value="delete">
+					Delete
+				</button>
+			}
+		</div>
+	</form>
+	<section>
+		<h1 class="inline text-lg font-mono font-bold">Kubeconfig</h1>
+		<textarea class={ "font-mono", "text-nowrap", "w-full", "resize-none", "mb-4", classDisabled } rows="10" readonly>{ kubeconfig }</textarea>
+		<a
+			class={ classButtonPrimary }
+			href={ templ.SafeURL("data:text/plain;base64," + base64.StdEncoding.EncodeToString([]byte(kubeconfig))) }
+			download="kubeconfig"
+		>Download</a>
+	</section>
+}
+
+templ wsQuotaInput(label, name, units string, res model.Resource, ws, newWS *model.Workspace) {
+	<label class={ classLabel }>
+		{ label }
+		if units != "" {
+			<span class="text-sm font-normal text-gray-500">{ units }</span>
+		}
+	</label>
+	<input class={ "h-fit", classDisabled } value={ fmt.Sprint(ws.Quotas[res]) } disabled/>
+	<input class="h-fit" id={ name } name={ name } type="number" min="0" value={ fmt.Sprint(newWS.Quotas[res]) } required/>
+}
+
+script wsRemoveUser() {
+	if (event.target.parentNode.parentNode.childElementCount > 3) {
+		event.target.parentNode.remove()
+	} else {
+		event.target.parentNode.children[0].value = ""
+	}
+}
+
+script wsAddUser() {
+	const prev = event.target.previousElementSibling.previousElementSibling
+	const cloned = prev.cloneNode(true)
+	const nextId = Number.parseInt(cloned.children[0].id.split("-")[1]) + 1
+	cloned.children[0].id = `user-${nextId}`
+	cloned.children[0].name = `user-${nextId}`
+	cloned.children[0].value = ""
+	prev.insertAdjacentElement('afterend', cloned)
+}

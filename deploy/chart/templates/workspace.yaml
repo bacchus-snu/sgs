@@ -1,0 +1,77 @@
+{{- range .Values.workspaces }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ws-{{ .idHash }}
+  labels:
+    sgs.snucse.org/id: {{ .id | quote }}
+  annotations:
+    scheduler.alpha.kubernetes.io/node-selector: node-restriction.kubernetes.io/nodegroup={{ .nodegroup }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  namespace: ws-{{ .idHash }}
+  name: ws-quotas
+  labels:
+    sgs.snucse.org/sgs-id: {{ .id | quote }}
+spec:
+  hard:
+    {{- if .enabled }}
+    {{- toYaml .quotas | nindent 4 }}
+    {{- else }}
+    limits.cpu: 0
+    limits.memory: 0
+    requests.cpu: 0
+    requests.memory: 0
+    requests.nvidia.com/gpu: 0
+    requests.storage: 0
+    {{- end }}
+    services.loadbalancers: 0
+    services.nodeports: 0
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  namespace: ws-{{ .idHash }}
+  name: ws-quotas
+  labels:
+    sgs.snucse.org/id: {{ .id | quote }}
+spec:
+  limits:
+    - type: Container
+      default:
+        {{- if .enabled }}
+        cpu: {{ index .quotas "limits.cpu" }}
+        memory: {{ index .quotas "limits.memory" }}
+        {{- end }}
+        ephemeral-storage: 10Gi
+      max:
+        ephemeral-storage: 10Gi
+      defaultRequest:
+        cpu: 0
+        memory: 0
+        ephemeral-storage: 0
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: ws-{{ .idHash }}
+  name: ws-quotas
+  labels:
+    sgs.snucse.org/id: {{ .id | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+  {{- if .enabled }}
+  {{- range .users }}
+  - kind: User
+    name: id:{{ . }}
+  {{- end }}
+  {{- else }}
+  []
+  {{- end }}
+{{- end }}
