@@ -3,7 +3,7 @@ set -euo pipefail
 
 export KUBECTL_APPLYSET=true
 
-input=$(cat)
+input=$(</dev/stdin)
 
 cmd_template=( helm template sgs "$SGS_DEPLOY_CHART_PATH" -f- )
 cmd_apply=( kubectl apply --applyset workspacesets.sgs.snucse.org/sgs --prune -f- )
