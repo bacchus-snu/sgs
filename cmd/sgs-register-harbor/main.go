@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"slices"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -69,6 +70,11 @@ func runSync(ctx context.Context, hapi harborIface, want []workspace) error {
 	}
 
 	for _, p := range projects {
+		if !strings.HasPrefix(p, "ws-") {
+			// ignore non-workspace projects
+			continue
+		}
+
 		ind := slices.IndexFunc(want, func(w workspace) bool {
 			return fmt.Sprintf("ws-%s", w.IDHash) == p
 		})
