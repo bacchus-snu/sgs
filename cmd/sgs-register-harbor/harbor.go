@@ -210,8 +210,8 @@ func (h harborImpl) createRobot(ctx context.Context, name string) error {
 		"--docker-username", res.Payload.Name,
 		"--docker-password", res.Payload.Secret, // TODO: avoid passing secret as argument
 	)
-	if err := cmd.Run(); err != nil {
-		return err
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%w; %s", err, string(out))
 	}
 
 	cmd = exec.CommandContext(ctx,
@@ -219,8 +219,8 @@ func (h harborImpl) createRobot(ctx context.Context, name string) error {
 		"-n", name, "default",
 		"-p", fmt.Sprintf(`{"imagePullSecrets": [{"name": "sgs-registry"}]}`),
 	)
-	if err := cmd.Run(); err != nil {
-		return err
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%w; %s", err, string(out))
 	}
 
 	return nil
