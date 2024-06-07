@@ -13,15 +13,16 @@ $ nix develop
 ## Development
 
 ```
-# install npm dependencies
+$ # install npm dependencies
 $ npm i
 
-# hot reloader
+$ # hot reloader
 $ make hotreload
 
-# run tests
+$ # run tests
 $ docker-compose up -d
 $ make check
 
-# serving docs locally
+$ # serve docs locally
+$ make serve-docs
 ```

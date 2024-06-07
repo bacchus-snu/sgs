@@ -28,4 +28,8 @@ $ kubectl get events -w | grep ephemeral
 We strongly recommend that you use persistent volumes for your data. For
 details, see the [persistent volume example][examples-pv].
 
+If you need to install large runtimes (Python libraries through `pip`, etc.), we
+recommend building your image with the dependencies pre-installed. You can use
+our [private registry](use-registry.md) to host your images.
+
 [examples-pv]: run-workload-examples.md#persistent-volume

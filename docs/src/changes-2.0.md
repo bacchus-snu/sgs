@@ -39,3 +39,12 @@ workspace.
 
 We now enforce the `baseline` Pod Security Standard. Contact us if this is too
 restrictive for your use-case.
+
+## Registry
+
+Harbor projects are now created automatically upon workspace approval. You no
+longer need to create the project manually.
+
+We now automatically configure imagePullSecrets for your workspace under the
+default ServiceAccount. You no longer need to configure this manually, or
+specify `imagePullSecrets` in your pod configuration.

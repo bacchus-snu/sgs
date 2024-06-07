@@ -8,5 +8,6 @@
 - [Request a workspace](usage/request-workspace.md)
 - [Configure access](usage/configure-access.md)
 - [Query node details](usage/query-nodes.md)
+- [Use the registry](usage/use-registry.md)
 - [Run your workload](usage/run-workload.md)
   - [Examples](usage/run-workload-examples.md)

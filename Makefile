@@ -24,6 +24,10 @@ sgs-register-harbor:
 hotreload:
 	env $$(<.env.development xargs) air
 
+.PHONY: serve-docs
+serve-docs:
+	mdbook serve docs
+
 .PHONY: check
 check:
 	SGS_TEST_DBURL="postgres://sgs:sgs-pass@localhost:5433/sgs?sslmode=disable" \
