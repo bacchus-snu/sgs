@@ -121,27 +121,35 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("GPUs", "quota-gpu", "", model.ResGPURequest).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = reqQuotaInput("GPUs", "quota-gpu", "").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("Storage", "quota-storage", "GiB", model.ResStorageRequest).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = reqQuotaInput("Storage", "quota-storage", "GiB").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU", model.ResCPURequest).Render(ctx, templ_7745c5c3_Buffer)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<p class=\"col-start-2 text-sm text-gray-500\">If you are unsure about CPU or memory requirements, <span class=\"font-bold\">please leave them as 0</span>.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU", model.ResCPULimit).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB", model.ResMemoryRequest).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB", model.ResMemoryLimit).Render(ctx, templ_7745c5c3_Buffer)
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<p class=\"col-start-2 text-sm text-gray-500\">Do not request guaranteed resources unless you are sure you need them. <span class=\"font-bold\">Underutilization of guaranteed resources will result in workspace termination</span>.</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -152,13 +160,13 @@ func PageRequestForm() templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(ctxCSRF(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 32, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 40, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div class=\"m-4 flex flex-col items-center justify-center\"><div class=\"col-start-2 mb-4 max-w-md text-sm text-gray-500\"><p>If you are unsure about CPU or memory requirements, please leave them as 0. We will update them based on your GPU quota.</p><p>Do not request guaranteed resources unless you are sure you need them. Requesting guaranteed resources may result in longer wait times and unschedulable workloads. <span class=\"font-bold\">Underutilization of guaranteed resources will result in workspace termination</span>.</p></div>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><div class=\"m-4 flex flex-col items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -200,7 +208,7 @@ func PageRequestForm() templ.Component {
 	})
 }
 
-func reqQuotaInput(label, name, units string, res model.Resource) templ.Component {
+func reqQuotaInput(label, name, units string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -238,7 +246,7 @@ func reqQuotaInput(label, name, units string, res model.Resource) templ.Componen
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 54, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 51, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -251,7 +259,7 @@ func reqQuotaInput(label, name, units string, res model.Resource) templ.Componen
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 55, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 52, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -269,7 +277,7 @@ func reqQuotaInput(label, name, units string, res model.Resource) templ.Componen
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(units)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 57, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 54, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -287,7 +295,7 @@ func reqQuotaInput(label, name, units string, res model.Resource) templ.Componen
 		var templ_7745c5c3_Var18 string
 		templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 60, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 57, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 		if templ_7745c5c3_Err != nil {
@@ -300,7 +308,7 @@ func reqQuotaInput(label, name, units string, res model.Resource) templ.Componen
 		var templ_7745c5c3_Var19 string
 		templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 60, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 57, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 		if templ_7745c5c3_Err != nil {

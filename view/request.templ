@@ -22,26 +22,23 @@ templ PageRequestForm() {
 				</select>
 				<label class={ "col-start-1", classLabel } for="userdata">Reason</label>
 				<textarea class="resize-none" id="userdata" name="userdata" rows="10" required></textarea>
-				@reqQuotaInput("GPUs", "quota-gpu", "", model.ResGPURequest)
-				@reqQuotaInput("Storage", "quota-storage", "GiB", model.ResStorageRequest)
-				@reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU", model.ResCPURequest)
-				@reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU", model.ResCPULimit)
-				@reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB", model.ResMemoryRequest)
-				@reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB", model.ResMemoryLimit)
+				@reqQuotaInput("GPUs", "quota-gpu", "")
+				@reqQuotaInput("Storage", "quota-storage", "GiB")
+				<p class="col-start-2 text-sm text-gray-500">
+					If you are unsure about CPU or memory requirements,
+					<span class="font-bold">please leave them as 0</span>.
+				</p>
+				@reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU")
+				@reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB")
+				<p class="col-start-2 text-sm text-gray-500">
+					Do not request guaranteed resources unless you are sure you need them.
+					<span class="font-bold">Underutilization of guaranteed resources will result in workspace termination</span>.
+				</p>
+				@reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU")
+				@reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB")
 			</div>
 			<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
 			<div class="m-4 flex flex-col items-center justify-center">
-				<div class="col-start-2 mb-4 max-w-md text-sm text-gray-500">
-					<p>
-						If you are unsure about CPU or memory requirements, please leave them as 0.
-						We will update them based on your GPU quota.
-					</p>
-					<p>
-						Do not request guaranteed resources unless you are sure you need them.
-						Requesting guaranteed resources may result in longer wait times and unschedulable workloads.
-						<span class="font-bold">Underutilization of guaranteed resources will result in workspace termination</span>.
-					</p>
-				</div>
 				<button class={ classButtonPrimary } name="action" value="request">
 					Submit
 				</button>
@@ -50,7 +47,7 @@ templ PageRequestForm() {
 	}
 }
 
-templ reqQuotaInput(label, name, units string, res model.Resource) {
+templ reqQuotaInput(label, name, units string) {
 	<label class={ "col-start-1", classLabel } for={ name }>
 		{ label }
 		if units != "" {
