@@ -28,6 +28,7 @@ spec:
     requests.nvidia.com/gpu: 0
     requests.storage: 0
     {{- end }}
+    requests.ephemeral-storage: 0
     services.loadbalancers: 0
     services.nodeports: 0
 ---
