@@ -25,14 +25,18 @@ buildGoModule rec {
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-M+/hAVmtksajv/j2zsKcAUeMp813bzihwfvMaeZEhoA=";
+  vendorHash = "sha256-Wtk0GfNCpTALHVlOl1Al94E/WoS59BcBDmER6SRDcZQ=";
 
   ldflags = [
     "-s"
     "-w"
   ];
 
-  subPackages = [ "cmd/sgs" ];
+  subPackages = [
+    "cmd/sgs"
+    "cmd/sgs-register-harbor"
+  ];
+  # test all packages
   preCheck = ''
     unset subPackages
   '';
@@ -62,7 +66,14 @@ buildGoModule rec {
   ];
 
   postInstall = ''
-    wrapProgram $out/bin/sgs --prefix PATH : ${lib.makeBinPath buildInputs}
+    cp -r deploy/chart $out/chart
+    install -m755 deploy/worker-sync.sh $out/bin/worker-sync.sh
+
+    wrapProgram $out/bin/sgs \
+      --prefix PATH : ${lib.makeBinPath buildInputs} \
+      --set-default SGS_WORKER_COMMAND "$out/bin/worker-sync.sh" \
+      --set-default SGS_DEPLOY_CHART_PATH "$out/chart" \
+      --set-default SGS_DEPLOY_REGHARBOR_PATH "$out/bin/sgs-register-harbor"
   '';
 
   meta.mainProgram = "sgs";

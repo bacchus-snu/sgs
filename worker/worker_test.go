@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -24,7 +25,7 @@ func TestCmdWorker(t *testing.T) {
 		},
 	}
 
-	w := CmdWorker("tee", f.Name())
+	w := CmdWorker(fmt.Sprintf("tee %s", f.Name()))
 	if err := w.Work(context.Background(), vwss); err != nil {
 		t.Fatal(err)
 	}

@@ -65,14 +65,14 @@ func toVWorkspaces(wss []*model.Workspace) ValueWorkspaces {
 	return vwss
 }
 
-func CmdWorker(name string, args ...string) WorkerFunc {
+func CmdWorker(command string) WorkerFunc {
 	return func(ctx context.Context, vwss ValueWorkspaces) error {
 		b, err := json.Marshal(vwss)
 		if err != nil {
 			return err
 		}
 
-		cmd := exec.CommandContext(ctx, name, args...)
+		cmd := exec.CommandContext(ctx, "bash", "-c", command)
 		cmd.Stdin = bytes.NewReader(b)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
@@ -85,30 +85,16 @@ func CmdWorker(name string, args ...string) WorkerFunc {
 }
 
 type Config struct {
-	Apply     bool   `mapstructure:"apply"`
-	ChartPath string `mapstructure:"chart_path"`
+	Command string `mapstructure:"command"`
 }
 
 func (c *Config) Bind() {
-	viper.SetDefault("worker.apply", false)
-	viper.BindEnv("worker.apply", "SGS_WORKER_APPLY")
-	viper.BindEnv("worker.chart_path", "SGS_WORKER_CHART_PATH")
+	viper.BindEnv("worker.command", "SGS_WORKER_COMMAND")
 }
 
 func (c *Config) Validate() error {
-	if c.ChartPath == "" {
-		return fmt.Errorf("chart_path is required")
+	if c.Command == "" {
+		return fmt.Errorf("command is required")
 	}
 	return nil
-}
-
-func ApplyWorker(cfg Config) WorkerFunc {
-	cmd := "helm template sgs \"$SGS_WORKER_CHART_PATH\" -f -"
-	applyCmd := ""
-	if cfg.Apply {
-		applyCmd = "KUBECTL_APPLYSET=true kubectl apply --applyset workspacesets.sgs.snucse.org/sgs --prune -f -"
-	} else {
-		applyCmd = "KUBECTL_APPLYSET=true kubectl apply --applyset workspacesets.sgs.snucse.org/sgs --prune --dry-run=client -f -"
-	}
-	return CmdWorker("bash", "-c", fmt.Sprintf("%s | %s", cmd, applyCmd))
 }
