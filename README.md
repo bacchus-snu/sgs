@@ -10,18 +10,6 @@ There are two ways to configure the development environment:
 $ nix develop
 ````
 
-### Not Nix
-
-Prerequisites:
-
-- Go >= 1.22
-- NodeJS
-
-```console
-# install build dependencies
-$ make build-deps
-```
-
 ## Development
 
 ```
@@ -29,9 +17,11 @@ $ make build-deps
 $ npm i
 
 # hot reloader
-$ air
+$ make hotreload
 
-# running tests:
+# run tests
 $ docker-compose up -d
 $ make check
+
+# serving docs locally
 ```
