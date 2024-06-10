@@ -62,7 +62,7 @@ func page(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var5 = []any{classButtonBase, "text-lg", "ml-auto", "hover:text-gray-500"}
+		var templ_7745c5c3_Var5 = []any{classButtonBase, "text-lg", "ml-4", "hover:text-gray-500"}
 		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var5...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
