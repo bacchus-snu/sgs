@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/bacchus-snu/sgs/pkg/auth"
+	"github.com/bacchus-snu/sgs/view"
 )
 
 // middlewareAuth adds the user to the context if they are authenticated.
@@ -102,5 +103,15 @@ func handleAuthCallback(
 		sess.Values["user"] = user
 		sess.Save(c.Request(), c.Response())
 		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("auth"))
+	}
+}
+
+func handleAuthLogout() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		sess, _ := session.Get("session", c)
+		delete(sess.Values, "user")
+		sess.Save(c.Request(), c.Response())
+
+		return c.Render(http.StatusOK, "", view.PageLogout())
 	}
 }

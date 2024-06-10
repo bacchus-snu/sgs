@@ -103,7 +103,6 @@ func AddRoutes(
 		middleware.Secure(),
 		middleware.Gzip(),
 
-		// TODO: session
 		session.Middleware(stor),
 		middlewareAuth(),
 	)
@@ -116,6 +115,7 @@ func AddRoutes(
 
 	e.GET("/auth", handleAuth(authSvc)).Name = "auth"
 	e.GET("/auth/callback", handleAuthCallback(authSvc))
+	e.GET("/auth/logout", handleAuthLogout())
 
 	requireAuth := middlewareAuthenticated()
 

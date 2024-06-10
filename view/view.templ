@@ -20,6 +20,9 @@ templ page(title string) {
 					<a class={ classButtonBase, "text-lg", "ml-auto", "hover:text-gray-500" } href="https://sgs-docs.snucse.org">
 						Docs
 					</a>
+					<a class={ classButtonBase, "text-lg", "ml-auto", "hover:text-gray-500" } href="/auth/logout">
+						Log out
+					</a>
 					<a class={ classButtonPrimary, "ml-4" } href="/request">
 						Workspace request
 					</a>
@@ -37,4 +40,11 @@ templ page(title string) {
 			</p>
 		</footer>
 	</html>
+}
+
+templ PageLogout() {
+	@page("Log out") {
+		<h1 class="mb-4 text-xl font-bold">Log out</h1>
+		<p>You have been logged out successfully.</p>
+	}
 }
