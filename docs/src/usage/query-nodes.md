@@ -15,6 +15,9 @@ bentley   Ready    <none>   31d   v1.30.1
 Your containers will automatically be assigned to one of the nodes your
 workspace's nodegroup.
 
+To query the available resources in your node, you can use the `kubectl describe
+node` command.
+
 ```console
 $ kubectl describe node bentley
 Name:               bentley
@@ -40,8 +43,8 @@ Allocated resources:
   nvidia.com/gpu     4          4
 ```
 
-In the above example output, `bentley` has the following resources available in
-total:
+In the above example output, you can see that `bentley` has the following
+resources available in total:
 
 | Resource | Allocatable | Allocated (Requests) |
 | -------- | ----------- | --------- |

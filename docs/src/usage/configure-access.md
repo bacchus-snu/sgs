@@ -4,32 +4,40 @@
 
 In order to access our cluster, you need to download and install Kubernetes CLI
 tooling ([`kubectl`][kubectl]) and the authentication plugin
-([`kubelogin`][kubelogin]).
+([`kubelogin`][kubelogin]). Refer to the linked pages for installation
+instructions.
 
 [kubectl]: https://kubernetes.io/docs/tasks/tools/
 [kubelogin]: https://github.com/int128/kubelogin
 [sgs]: https://sgs.snucse.org
 
-### kubectl
+## Verify CLI tool installation
 
-TODO
+Verify your CLI tools were installed with the following commands. Your specific
+version numbers may differ.
 
-### kubelogin (oidc-login)
+```console
+$ kubectl version --client
+kubectl version --client=true
+Client Version: v1.30.1
+Kustomize Version: v5.0.4-0.20230601165947-6ce0bf390ce3
 
-TODO
+$ kubectl oidc-login --version
+kubelogin version v1.28.1
+```
 
 ## Download the kubeconfig file
 
-Open the SGS [workspace management page][sgs] and navigate to your "Enabled"
-workspace. Click the "Download" button at the bottom of the page to download the
-kubeconfig file.
+Open the SGS [workspace management page][sgs] and navigate to your workspace.
+Click the download button at the bottom of the page to download the kubeconfig
+file.
 
 ![Download kubeconfig](configure-access/download-kubeconfig.png)
 
-Place your downloaded kubeconfig file in the default kubeconfig location:
+Place your downloaded kubeconfig file in the default kubeconfig location
 
 - **Unix** (Linux, MacOS): `~/.kube/config`
-- **Windows**: TODO
+- **Windows**: `%USERPROFILE%\.kube\config`
 
 ## Verify your configuration
 

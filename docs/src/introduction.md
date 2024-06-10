@@ -7,6 +7,14 @@ carefully.
 This service is provided for **research purposes only**. Please limit your use
 to the reasons stated in your workspace application form.
 
+## Links
+
+- Workspace management page: [`sgs.snucse.org`][sgs]
+- Registry: [`sgs-registry.snucse.org`][sgs-registry]
+
+[sgs]: https://sgs.snucse.org
+[sgs-registry]: https://sgs-registry.snucse.org
+
 ## Best-Effort
 
 This service is provided on a best-effort basis. Bacchus volunteers will try our
