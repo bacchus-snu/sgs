@@ -11,9 +11,11 @@ to the reasons stated in your workspace application form.
 
 - Workspace management page: [`sgs.snucse.org`][sgs]
 - Registry: [`sgs-registry.snucse.org`][sgs-registry]
+- Dashboard [`sgs-dashboard.snucse.org`][sgs-dashboard]
 
 [sgs]: https://sgs.snucse.org
 [sgs-registry]: https://sgs-registry.snucse.org
+[sgs-dashboard]: https://sgs-dashboard.snucse.org
 
 ## Best-Effort
 
