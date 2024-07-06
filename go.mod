@@ -3,7 +3,7 @@ module github.com/bacchus-snu/sgs
 go 1.22.1
 
 require (
-	github.com/a-h/templ v0.2.707
+	github.com/a-h/templ v0.2.747
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/go-openapi/runtime v0.28.0
 	github.com/goharbor/go-client v0.210.0

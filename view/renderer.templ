@@ -1,14 +1,15 @@
 package view
 
 import (
+	"context"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
-	"github.com/labstack/echo/v4"
-
 	"github.com/bacchus-snu/sgs/model"
 	"github.com/bacchus-snu/sgs/pkg/auth"
+	"github.com/labstack/echo/v4"
 )
 
 var Renderer echo.Renderer = renderer{}
