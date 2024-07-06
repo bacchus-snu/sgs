@@ -81,11 +81,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1710154385,
-        "narHash": "sha256-4c3zQ2YY4BZOufaBJB4v9VBBeN2dH7iVdoJw8SDNCfI=",
+        "lastModified": 1717050755,
+        "narHash": "sha256-C9IEHABulv2zEDFA+Bf0E1nmfN4y6MIUe5eM2RCrDC0=",
         "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "872b63ddd28f318489c929d25f1f0a3c6039c971",
+        "rev": "31b6d2e40b36456e792cd6cf50d5a8ddd2fa59a1",
         "type": "github"
       },
       "original": {
@@ -157,16 +157,16 @@
         "xc": "xc"
       },
       "locked": {
-        "lastModified": 1716625173,
-        "narHash": "sha256-4TkK8zeoWWGmcBg8YwALo2EyKfOyq5ut/3TjG81a+8M=",
+        "lastModified": 1720130440,
+        "narHash": "sha256-XFktmKFVN1/1Y57ZoUTVKDgEk38491N92orgejFLnMA=",
         "owner": "a-h",
         "repo": "templ",
-        "rev": "0d42d67413c2a0fa357018d1b1c0301231f3b359",
+        "rev": "9ae32f91eaddcfc8badee91d4af684f66e707b14",
         "type": "github"
       },
       "original": {
         "owner": "a-h",
-        "ref": "v0.2.707",
+        "ref": "v0.2.747",
         "repo": "templ",
         "type": "github"
       }
@@ -180,11 +180,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1709043057,
-        "narHash": "sha256-F/u9u1vevCUqgCz0WjcCOPcN+h9kLEP73nBqie86J2w=",
+        "lastModified": 1717601811,
+        "narHash": "sha256-+XQvDRXpzjBdZI3JGKP6SAOYXM+JSEbWL5kqtCwRJXE=",
         "owner": "joerdav",
         "repo": "xc",
-        "rev": "52cfa7e7f2d5a0d97b45a6f69ff1403a901e78c6",
+        "rev": "f8e8e658978d6c9fe49c27b684ca7375a74deef1",
         "type": "github"
       },
       "original": {
