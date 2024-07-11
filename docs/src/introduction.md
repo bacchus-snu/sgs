@@ -1,15 +1,5 @@
 # SNUCSE GPU Service 3.0
 
-<div class="warning">
-
-SGS 3.0 is still in development. The documents here are displayed for review,
-and may not reflect the state of the service at the time of launch.
-
-We are not currently approving workspace requests. If you wish to preview the
-service, please contact us via email.
-
-</div>
-
 SNUCSE GPU Service (SGS) 3.0 is a free service provided to students in the SNU
 CSE department. Before using this service, make sure you read this manual very
 carefully.
