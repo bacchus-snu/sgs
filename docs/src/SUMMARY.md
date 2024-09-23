@@ -2,6 +2,7 @@
 
 - [Introduction](introduction.md)
 - [Changes from 2.0](changes-2.0.md)
+- [Resources and eligibility](resources-and-eligibility.md)
 
 # Usage
 

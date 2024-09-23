@@ -28,7 +28,7 @@ value using LimitRanges. If you need to run multiple containers (multiple
 containers in a pod, multiple pods, or even both), adjust the limits in your pod
 configuration.
 
-## Permissions
+## Permissions & collaborating with others
 
 Users can now query node details. You no longer need to contact Bacchus to check
 the status of available node resources.
