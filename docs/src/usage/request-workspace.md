@@ -26,3 +26,37 @@ You may request updates to your quota or the users list at any time. Use the
 requests, change requests will be reviewed by Bacchus volunteers.
 
 ![Request changes](request-workspace/ws-changes.png)
+
+## GPU Resource Allocation Request Guidelines
+
+**Important:** In order to ensure that our limited GPU resources are allocated in an optimal and transparent manner, we require all researchers to provide a clear and concise justification for their resource requests.
+
+When submitting a request for GPU resources, please provide a concise explanation of how the allocated resources will be utilized to support your research objectives. This justification should include:
+
+- A brief overview of your research project, including its goals and objectives.
+- If you (or your team) are targeting a specific journal or conference, please include the CfP(Call for Papers) URL.
+  - This may help us to prioritize your resource request accordingly if the deadlines are nearer.
+- A description of the specific GPU resources required, including:
+  - A brief description of workloads, you are going to run on the GPU(s).
+  - If you are requesting multiple GPUs, please provide detailed justification with regard to VRAM requirements or research challenges.
+- A description of your storage requirements. Explain why you need a specific amount of storage by providing the details on:
+  - The size of the model (i.e. the approximate number of model parameters)
+  - The size and number of datasets.
+  - Any specific storage-related constraints or limitations.
+- If you entered non-zero values to 'CPU Guaranteed' or 'Memory Guaranteed', please provide a detailed justification for your request.
+  - In most cases, you don't need to obtain guaranteed CPU or Memory resources, and guaranteed resources only increase the risk of your workloads being terminated due to underutilized guaranteed resources.
+- An estimate of the expected duration of the project.
+
+<div class="warning">
+Failure to provide a satisfactory justification may result in delays or rejection of your resource request.
+</div>
+
+### Why this is important?
+
+As system administrators, we are accountable to the CSE department for ensuring that our GPU resources are allocated in a way that maximizes their impact on research projects. By providing a clear justification for your resource requests, you are helping us to:
+
+- Evaluate the merits and urgency of each request and prioritize allocations accordingly.
+- Report to the CSE department on the effective utilization of our GPU resources and the impact on research outcomes.
+- Continuously improve our resource allocation processes to better support the research community.
+
+Thank you for your understanding, and please feel free to reach out to us at [contact@bacchus.snucse.org](mailto:contact@bacchus.snucse.org).
