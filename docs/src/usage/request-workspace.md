@@ -37,8 +37,8 @@ When submitting a request for GPU resources, please provide a concise explanatio
 - If you (or your team) are targeting a specific journal or conference, please include the CfP(Call for Papers) URL.
   - This may help us to prioritize your resource request accordingly if the deadlines are nearer.
 - A description of the specific GPU resources required, including:
-  - A brief description of workloads you are going to run on the GPU(s).
-  - If you are requesting multiple GPUs, please provide detailed justification with regard to VRAM requirement or research challenges.
+  - A brief description of workloads, you are going to run on the GPU(s).
+  - If you are requesting multiple GPUs, please provide detailed justification with regard to VRAM requirements or research challenges.
 - A description of your storage requirements. Explain why you need a specific amount of storage by providing the details on:
   - The size of the model (i.e. the approximate number of model parameters)
   - The size and number of datasets.
