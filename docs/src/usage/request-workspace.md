@@ -43,7 +43,7 @@ When submitting a request for GPU resources, please provide a concise explanatio
   - The size of the model (i.e. the approximate number of model parameters)
   - The size and number of datasets.
   - Any specific storage-related constraints or limitations.
-- If you entered non-zero values to 'CPU Guaranteed' or 'Memory Guaranteed', please provide a detailed justification for your request
+- If you entered non-zero values to 'CPU Guaranteed' or 'Memory Guaranteed', please provide a detailed justification for your request.
   - In most cases, you don't need to obtain guaranteed CPU or Memory resources, and guaranteed resources only increase the risk of your workloads being terminated due to underutilized guaranteed resources.
 - An estimate of the expected duration of the project.
 
