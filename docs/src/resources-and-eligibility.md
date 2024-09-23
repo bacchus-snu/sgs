@@ -30,7 +30,7 @@ We offer SNUCSE GPU Service to SNU graduate researchers who meet one of the foll
 
 ### Node group
 
-The node group for graduate researchers includes the "bently" node.
+The node group for graduate researchers includes the "bentley" node.
 
 - NVIDIA DGX A100 "bentley"
   - NVIDIA A100 40GB x 8
