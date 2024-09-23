@@ -9,11 +9,6 @@ We have developed a unified workspace and quota and management system. You can
 now request a workspace directly from the web interface. You no longer need to
 create UserBootstrap objects to create resource quotas.
 
-## Collaborate with others
-
-You can requset to add other SNUCSE users to your existing workspace, enabling
-seamless collaboration among researchers.
-
 ## Nodes
 
 We now manage multiple nodes in a single cluster. Each node belongs to a
@@ -33,7 +28,7 @@ value using LimitRanges. If you need to run multiple containers (multiple
 containers in a pod, multiple pods, or even both), adjust the limits in your pod
 configuration.
 
-## Permissions
+## Permissions & collaborating with others
 
 Users can now query node details. You no longer need to contact Bacchus to check
 the status of available node resources.
