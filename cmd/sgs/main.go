@@ -52,7 +52,7 @@ func run(ctx context.Context) error {
 	queue := worker.NewQueue(
 		repo.Workspaces(),
 		worker.CmdWorker(cfg.Worker.Command),
-		time.Minute, 5*time.Second,
+		time.Minute, 30*time.Second,
 	)
 	queue.Enqueue() // enqueue update on startup
 
