@@ -33,6 +33,7 @@ requests, change requests will be reviewed by Bacchus volunteers.
 
 When submitting a request for GPU resources, please provide a concise explanation of how the allocated resources will be utilized to support your research objectives. This justification should include:
 
+- If you are requesting a workspace in `graduate` Nodegroup, it is mandatory to provide the name of your advisor and/or the name of the principal investigator (PI) of the project.
 - A brief overview of your research project, including its goals and objectives.
 - If you (or your team) are targeting a specific journal or conference, please include the CfP(Call for Papers) URL.
   - This may help us to prioritize your resource request accordingly if the deadlines are nearer.
@@ -50,6 +51,12 @@ When submitting a request for GPU resources, please provide a concise explanatio
 <div class="warning">
 Failure to provide a satisfactory justification may result in delays or rejection of your resource request.
 </div>
+
+<div class="warning">
+For collaborative projects involving multiple researchers, please submit a single workspace request and subsequently add your team members to the workspace by providing their id.snucse.org account usernames. This approach eliminates the need for individual workspace requests for each researcher.
+</div>
+
+Applications may be submitted in either Korean or English, and our reviewers will be able to assess them in either language.
 
 ### Why this is important?
 
