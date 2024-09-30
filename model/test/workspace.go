@@ -22,6 +22,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Users:     []string{"user1"},
 			}
 			want.ID = testWorkspaceCreate(t, wsSvc, &want, nil)
+			want.Request = want.InitialRequest()
 
 			testWorkspaceListAll(t, wsSvc, []*model.Workspace{&want})
 			testWorkspaceListUser(t, wsSvc, "user1", []*model.Workspace{&want})
@@ -209,18 +210,21 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Users:     []string{"user1"},
 			}
 			ws1.ID = testWorkspaceCreate(t, wsSvc, &ws1, nil)
+			ws1.Request = ws1.InitialRequest()
 
 			ws2 := model.Workspace{
 				Nodegroup: model.NodegroupGraduate,
 				Users:     []string{"user2"},
 			}
 			ws2.ID = testWorkspaceCreate(t, wsSvc, &ws2, nil)
+			ws2.Request = ws2.InitialRequest()
 
 			wsAll := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
 				Users:     []string{"user1", "user2"},
 			}
 			wsAll.ID = testWorkspaceCreate(t, wsSvc, &wsAll, nil)
+			wsAll.Request = wsAll.InitialRequest()
 
 			testWorkspaceListAll(t, wsSvc, []*model.Workspace{&ws1, &ws2, &wsAll})
 			testWorkspaceListUser(t, wsSvc, "user1", []*model.Workspace{&ws1, &wsAll})
@@ -291,7 +295,7 @@ func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.W
 	want := *ws
 	want.ID = got.ID
 	want.Enabled = false
-	want.Request = nil
+	want.Request = want.InitialRequest()
 	if diff := cmp.Diff(got, &want, cmpopts.EquateEmpty()); diff != "" {
 		t.Fatalf("CreateWorkspace(%#v) = mismatch\n%s", ws, diff)
 	}

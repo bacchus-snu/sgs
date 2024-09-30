@@ -56,7 +56,15 @@ func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Worksp
 	newWS.ID = svc.nextID
 	svc.nextID++
 	newWS.Enabled = false
-	newWS.Request = nil
+	newWS.Request = &model.WorkspaceUpdate{
+		WorkspaceID: newWS.ID,
+		ByUser:      newWS.Users[0],
+		Enabled:     true,
+		Nodegroup:   newWS.Nodegroup,
+		Userdata:    newWS.Userdata,
+		Quotas:      maps.Clone(newWS.Quotas),
+		Users:       slices.Clone(newWS.Users),
+	}
 	slices.Sort(newWS.Users)
 
 	svc.data[newWS.ID] = newWS
