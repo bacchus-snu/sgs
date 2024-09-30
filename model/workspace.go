@@ -43,6 +43,20 @@ func (ws Workspace) Valid() bool {
 	return true
 }
 
+// InitialRequest returns the initial request for a new workspace. It has the
+// same attributes as the workspace itself, but enabled.
+func (ws *Workspace) InitialRequest() *WorkspaceUpdate {
+	return &WorkspaceUpdate{
+		WorkspaceID: ws.ID,
+		ByUser:      ws.Users[0],
+		Enabled:     true,
+		Nodegroup:   ws.Nodegroup,
+		Userdata:    ws.Userdata,
+		Quotas:      ws.Quotas,
+		Users:       ws.Users,
+	}
+}
+
 type WorkspaceUpdate struct {
 	WorkspaceID ID
 	ByUser      string

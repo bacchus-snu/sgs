@@ -67,18 +67,25 @@ templ PageWorkspaceDetails(ws *model.Workspace, kubeconfig string) {
 
 // Render the status badge
 templ wsStatusButton(ws *model.Workspace) {
-	if ws.Enabled && ws.Request == nil {
-		// enabled (and created) and no pending requests: all good
-		<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled</span>
-	} else if !ws.Created {
-		// hasn't ever been enabled: pending approval
-		<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending approval</span>
-	} else if !ws.Enabled {
-		// created && !enabled: disabled by admin
-		<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled</span>
-	} else if ws.Enabled && ws.Request != nil {
-		// otherwise, enabled but has pending changes
-		<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending changes</span>
+	switch true {
+		case !ws.Created && ws.Request != nil:
+			// pending approval (initial state)
+			<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending</span>
+		case !ws.Created && ws.Request == nil:
+			// request has been rejected
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Rejected</span>
+		case ws.Enabled && ws.Request == nil:
+			// enabled
+			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled</span>
+		case !ws.Enabled && ws.Request == nil:
+			// disabled
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled</span>
+		case ws.Enabled && ws.Request != nil:
+			// enabled, changes requested
+			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled, pending request</span>
+		case !ws.Enabled && ws.Request != nil:
+			// disabled, changes requested
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled, pending request</span>
 	}
 }
 

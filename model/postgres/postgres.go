@@ -131,6 +131,15 @@ func (svc *workspacesRepository) CreateWorkspace(ctx context.Context, ws *model.
 			}
 		}
 
+		upd := ws.InitialRequest()
+		upd.WorkspaceID = id
+		tx.Exec(ctx, `
+			INSERT INTO workspaces_updaterequests  (workspace_id, by_user, data)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (workspace_id) DO UPDATE
+			SET by_user = EXCLUDED.by_user, data = EXCLUDED.data`,
+			upd.WorkspaceID, upd.ByUser, upd)
+
 		// we could reconstruct the ws here, but it's easier to just query it
 		newWs, err = queryWorkspace(ctx, tx, id)
 		return err
