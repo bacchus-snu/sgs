@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os/exec"
@@ -76,7 +77,9 @@ func CmdWorker(command string) WorkerFunc {
 		cmd.Stdin = bytes.NewReader(b)
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("cmd worker: %v; %v", err, string(out))
+			return errors.Join(
+				fmt.Errorf("cmd worker: %v; %v", err, string(out)),
+				ctx.Err())
 		}
 		log.Println(string(out))
 
