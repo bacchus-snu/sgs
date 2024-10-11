@@ -10,6 +10,9 @@
   bash,
   kubectl,
   kubernetes-helm,
+  # test runtime deps
+  etcd,
+  kubernetes,
 }:
 
 let
@@ -41,12 +44,21 @@ buildGoModule rec {
     unset subPackages
   '';
 
+  # controller runtime testing dependencies
+  env = {
+    TEST_ASSET_ETCD = lib.getExe' etcd "etcd";
+    TEST_ASSET_KUBECTL = lib.getExe' kubectl "kubectl";
+    TEST_ASSET_KUBE_APISERVER = lib.getExe' kubernetes "kube-apiserver";
+  };
+  passthru.testEnv = env;
+
   # build tailwind CSS
   nativeBuildInputs = [
     makeWrapper
     nodejs
     npmHooks.npmConfigHook
   ];
+
   inherit npmDeps;
   preBuild = ''
     NODE_ENV=production make generate-tailwindcss

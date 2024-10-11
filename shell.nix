@@ -16,11 +16,13 @@ mkShell {
     sgs
     sgs-docs
   ];
-  nativeBuildInputs = [
+  packages = [
     air
     docker-compose
     go-migrate
     golangci-lint
     templ
   ];
+
+  env = sgs.passthru.testEnv;
 }
