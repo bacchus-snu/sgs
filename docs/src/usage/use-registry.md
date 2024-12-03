@@ -21,7 +21,7 @@ such as nvcr or dockerhub.
 
 ## Push images to the registry
 
-Navigate to your workspace project's "Repositoriees" tab and refer to the "Push
+Navigate to your workspace project's "Repositories" tab and refer to the "Push
 command" section for instructions on how to push images to the registry.
 
 ```console
