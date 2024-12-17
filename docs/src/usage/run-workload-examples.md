@@ -136,6 +136,7 @@ Use this example to spawn an ephemeral shell with access to GPU resources.
 <div class="warning">
 
 The example GPU shell will **auto terminate after 25 minutes, DO NOT** use for consistent workloads.
+</div>
 
 ```yaml
 # gpu-shell.yaml
