@@ -133,7 +133,7 @@ will be **irrecoverably lost** if the PersistentVolumeClaim is deleted.
 
 Use this example to spawn an ephemeral shell with access to GPU resources.
 
-(Reminder)
+<div class="warning">
 
 The example GPU shell will **auto terminate after 25 minutes, DO NOT** use for consistent workloads.
 
