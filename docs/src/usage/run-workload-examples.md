@@ -133,6 +133,11 @@ will be **irrecoverably lost** if the PersistentVolumeClaim is deleted.
 
 Use this example to spawn an ephemeral shell with access to GPU resources.
 
+<div class="warning">
+
+The example GPU shell will **auto terminate after 25 minutes, DO NOT** use for consistent workloads.
+</div>
+
 ```yaml
 # gpu-shell.yaml
 apiVersion: v1
@@ -144,7 +149,7 @@ spec:
   containers:
     - name: app
       image: nvcr.io/nvidia/cuda:12.5.0-base-ubuntu22.04
-      command: ['/bin/bash', '-c', 'sleep inf']
+      command: ['/bin/bash', '-c', 'sleep 1500 && echo "Time expired. Exiting..." && exit']
       resources:
         limits:
           nvidia.com/gpu: 4
