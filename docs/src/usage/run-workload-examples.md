@@ -91,6 +91,20 @@ spec:
       storage: 100Gi
 ```
 
+<div class="warning">
+
+The volume **cannot** be resized after creation. Ensure that you allocate enough
+space for your needs, according to your approved storage quota.
+
+If you need more storage space,
+
+1. Request a temporary storage quota increase.
+2. Create a new PersistentVolumeClaim with the new size.
+3. Copy your data from the old volume to the new volume.
+4. Delete the old PersistentVolumeClaim.
+
+</div>
+
 ```yaml
 # persistent-volume-shell.yaml
 apiVersion: v1
