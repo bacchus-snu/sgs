@@ -52,6 +52,7 @@ kind: Pod
 metadata:
   name: simple-persistent-shell
 spec:
+  restartPolicy: Never
   terminationGracePeriodSeconds: 1
   containers:
     - name: app
@@ -112,6 +113,7 @@ kind: Pod
 metadata:
   name: persistent-volume-shell
 spec:
+  restartPolicy: Never
   volumes:
     - name: my-volume
       persistentVolumeClaim:
@@ -159,6 +161,7 @@ kind: Pod
 metadata:
   name: gpu-shell
 spec:
+  restartPolicy: Never
   terminationGracePeriodSeconds: 1
   containers:
     - name: app
