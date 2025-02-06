@@ -12,12 +12,16 @@ We offer SNUCSE GPU Service to SNU undergraduate researchers who meet one of the
 
 ### Node group
 
-The node group for undergraduate researchers includes the "ford" node.
+The node group for undergraduate researchers includes the "ford" and "ferrari" nodes.
 
 - ProLiant XL645d Gen10 Plus "ford"
   - NVIDIA A100 40GB x 4
   - AMD EPYC 75F3 x 1, 64 threads
   - 768GB DDR4
+- ProLiant XL675d Gen10 Plus "ferrari"
+  - NVIDIA A100 80GB x 8
+  - AMD EPYC 7763 x 2, 256 threads
+  - 1024GB DDR4
 
 ## For graduate researchers
 
