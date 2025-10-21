@@ -28,9 +28,9 @@ templ PageWorkspaceList(wss []*model.Workspace) {
 			for _, ws := range wss {
 				<a href={ templ.URL(fmt.Sprintf("/ws/%s", ws.ID.Hash())) }>
 					<li class="rounded p-2 hover:bg-gray-200">
-						<div>
-							<h1 class="inline text-lg font-mono font-bold">{ ws.ID.Hash() }</h1>
-							<h2 class="ml-2 inline text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
+						<div class='flex items-baseline'>
+							<h1 class="text-lg font-mono font-bold">{ ws.ID.Hash() }</h1>
+							<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
 							@wsStatusButton(ws)
 						</div>
 						<div>
@@ -70,34 +70,34 @@ templ wsStatusButton(ws *model.Workspace) {
 	switch true {
 		case !ws.Created && ws.Request != nil:
 			// pending approval (initial state)
-			<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2 py-1">Pending</span>
+			<span class="ml-4 rounded-full border border-amber-700 bg-amber-200 text-amber-700 px-2">Pending</span>
 		case !ws.Created && ws.Request == nil:
 			// request has been rejected
-			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Rejected</span>
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2">Rejected</span>
 		case ws.Enabled && ws.Request == nil:
 			// enabled
-			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled</span>
+			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2">Enabled</span>
 		case !ws.Enabled && ws.Request == nil:
 			// disabled
-			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled</span>
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2">Disabled</span>
 		case ws.Enabled && ws.Request != nil:
 			// enabled, changes requested
-			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2 py-1">Enabled, pending request</span>
+			<span class="ml-4 rounded-full border border-green-700 bg-green-200 text-green-700 px-2">Enabled, pending request</span>
 		case !ws.Enabled && ws.Request != nil:
 			// disabled, changes requested
-			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2 py-1">Disabled, pending request</span>
+			<span class="ml-4 rounded-full border border-amber-700 bg-red-200 text-red-700 px-2">Disabled, pending request</span>
 	}
 }
 
 templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
-	<div>
-		<h1 class="inline text-lg font-bold font-mono">{ ws.ID.Hash() }</h1>
-		<h2 class="ml-2 inline text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
+	<div class='flex items-baseline'>
+		<h1 class="text-lg font-bold font-mono">{ ws.ID.Hash() }</h1>
+		<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
 		@wsStatusButton(ws)
-		if ws.Request != nil {
-			<div><span class="text-gray-500">Changes requested by</span> { ws.Request.ByUser }</div>
-		}
 	</div>
+	if ws.Request != nil {
+		<div><span class="text-gray-500">Changes requested by</span> { ws.Request.ByUser }</div>
+	}
 	<form class="mt-4" method="post">
 		<div class="grid grid-cols-3 gap-4">
 			<span class="font-bold text-center col-start-2">Current</span>
