@@ -46,7 +46,8 @@ spec:
               cp /sgs-runc-wrapper /host/usr/local/bin/sgs-runc-wrapper
               chmod +x /host/usr/local/bin/sgs-runc-wrapper
               echo "Installation complete"
-              /host/usr/local/bin/sgs-runc-wrapper --help || true
+              # Verify the binary exists and is executable
+              test -x /host/usr/local/bin/sgs-runc-wrapper && echo "Verification passed"
           volumeMounts:
             - name: host-bin
               mountPath: /host/usr/local/bin

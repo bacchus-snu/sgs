@@ -46,13 +46,34 @@ import (
 var errNoSGSAnnotation = errors.New("no SGS os-volume annotation found")
 
 const (
-	// realRuncPath is the path to the actual runc binary
-	realRuncPath = "/usr/bin/runc"
+	// defaultRuncPath is the default path to the actual runc binary
+	defaultRuncPath = "/usr/bin/runc"
+
+	// envRuncPath is the environment variable to override runc path
+	envRuncPath = "SGS_RUNC_PATH"
 
 	// annotationOSVolume is the annotation that triggers rootfs replacement.
 	// The value is the PVC name, which we use to find the mount source.
 	annotationOSVolume = "sgs.snucse.org/os-volume"
+
+	// kubeletVolumesPrefix is the expected prefix for kubelet-managed PVC paths
+	kubeletVolumesPrefix = "/var/lib/kubelet/pods/"
 )
+
+// getRuncPath returns the path to the real runc binary.
+// It checks SGS_RUNC_PATH env var first, then tries exec.LookPath, finally falls back to default.
+func getRuncPath() string {
+	if path := os.Getenv(envRuncPath); path != "" {
+		log.Printf("Using runc path from %s: %s", envRuncPath, path)
+		return path
+	}
+	if path, err := exec.LookPath("runc"); err == nil {
+		log.Printf("Found runc via PATH: %s", path)
+		return path
+	}
+	log.Printf("Using default runc path: %s", defaultRuncPath)
+	return defaultRuncPath
+}
 
 func main() {
 	// Set up logging to a file for debugging (0600 to protect sensitive info)
@@ -105,12 +126,13 @@ func main() {
 	}
 
 	// Execute the real runc
-	log.Printf("Executing real runc: %s %v", realRuncPath, args)
-	execErr := syscall.Exec(realRuncPath, append([]string{"runc"}, args...), os.Environ())
+	runcPath := getRuncPath()
+	log.Printf("Executing real runc: %s %v", runcPath, args)
+	execErr := syscall.Exec(runcPath, append([]string{"runc"}, args...), os.Environ())
 	if execErr != nil {
 		log.Printf("Failed to exec runc: %v", execErr)
 		// Fallback to exec.Command if syscall.Exec fails
-		cmd := exec.Command(realRuncPath, args...)
+		cmd := exec.Command(runcPath, args...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -162,6 +184,13 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	log.Printf("PVC host path: %s", pvcHostPath)
 
+	// Validate that the PVC path is within expected kubelet directory to prevent
+	// malicious annotations pointing to arbitrary host directories
+	if !strings.HasPrefix(pvcHostPath, kubeletVolumesPrefix) {
+		return fmt.Errorf("PVC host path '%s' is not within expected kubelet directory '%s'; "+
+			"this may indicate a security issue or misconfiguration", pvcHostPath, kubeletVolumesPrefix)
+	}
+
 	// Validate that the PVC path exists and is a directory
 	pvcInfo, err := os.Stat(pvcHostPath)
 	if err != nil {
@@ -189,14 +218,16 @@ func maybeModifyRootfs(bundlePath string) error {
 	// Remove the PVC mount from the mounts list since it's now the root.
 	// We find it by matching the source path we're using as root.
 	// Use EvalSymlinks to normalize paths and handle symlinks/bind mounts.
-	normalizedPVCPath, _ := filepath.EvalSymlinks(pvcHostPath)
-	if normalizedPVCPath == "" {
+	normalizedPVCPath, err := filepath.EvalSymlinks(pvcHostPath)
+	if err != nil {
+		log.Printf("Warning: failed to resolve symlinks for PVC path '%s': %v; using original path", pvcHostPath, err)
 		normalizedPVCPath = pvcHostPath
 	}
 	filteredMounts := make([]specs.Mount, 0, len(spec.Mounts))
 	for _, mount := range spec.Mounts {
-		normalizedSource, _ := filepath.EvalSymlinks(mount.Source)
-		if normalizedSource == "" {
+		normalizedSource, err := filepath.EvalSymlinks(mount.Source)
+		if err != nil {
+			log.Printf("Warning: failed to resolve symlinks for mount source '%s': %v; using original path", mount.Source, err)
 			normalizedSource = mount.Source
 		}
 		if normalizedSource == normalizedPVCPath || mount.Source == pvcHostPath {

@@ -1,6 +1,8 @@
-# SGS OCI Runtime Wrapper
+# SGS runc Wrapper
 
-This is an OCI runtime wrapper that intercepts container creation and modifies the OCI spec's `Root.Path` to point to a PVC instead of the overlayfs from image layers.
+This is an OCI runtime wrapper for runc that intercepts container creation and modifies the OCI spec's `Root.Path` to point to a PVC instead of the overlayfs from image layers.
+
+Note: While this wraps runc specifically, the runc path can be configured via the `SGS_RUNC_PATH` environment variable.
 
 ## How It Works
 
