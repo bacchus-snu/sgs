@@ -1,0 +1,42 @@
+# SGS Stateful Container - Run Mode (OCI Runtime Wrapper Version)
+#
+# Same as Edit Mode but with full GPU memory access.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: node-volume-run
+  annotations:
+    # Triggers the sgs-runc-wrapper to modify Root.Path
+    sgs.snucse.org/os-volume: "node-volume"
+spec:
+  # Use SGS RuntimeClass
+  runtimeClassName: sgs
+  
+  containers:
+    - name: main
+      image: busybox:latest
+      command: ["/bin/bash"]
+      stdin: true
+      tty: true
+      volumeMounts:
+        # Beacon mount - Kubelet attaches PVC here,
+        # sgs-runc-wrapper uses its source as Root.Path,
+        # any mountPath is fine but you need to mention it,
+        # otherwise, the shim cannot find the PVC mount.
+        - name: boot-volume
+          mountPath: /var/lib/sgs/boot
+      resources:
+        requests:
+          cpu: 0
+          memory: 0
+        limits:
+          cpu: "4"
+          memory: "16Gi"
+          nvidia.com/gpu: 1
+          nvidia.com/gpu-mem: "10000" # HAMi: 10GB GPU memory (Run Mode)
+  
+  volumes:
+    - name: boot-volume
+      persistentVolumeClaim:
+        claimName: node-volume

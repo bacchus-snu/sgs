@@ -14,6 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/labstack/echo-contrib v0.17.1
 	github.com/labstack/echo/v4 v4.12.0
+	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/spf13/viper v1.19.0
 	golang.org/x/oauth2 v0.21.0
 	gopkg.in/yaml.v3 v3.0.1
