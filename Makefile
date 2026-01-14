@@ -20,7 +20,7 @@ sgs:
 sgs-register-harbor:
 	go build -o ./sgs-register-harbor ./cmd/sgs-register-harbor
 sgs-runc-wrapper:
-	CGO_ENABLED=0 go build -o ./sgs-runc-wrapper ./cmd/sgs-containerd-shim
+	CGO_ENABLED=0 go build -o ./sgs-runc-wrapper ./cmd/sgs-runc-wrapper
 
 .PHONY: hotreload
 hotreload:

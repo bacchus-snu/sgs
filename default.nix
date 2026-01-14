@@ -35,7 +35,7 @@ buildGoModule rec {
   subPackages = [
     "cmd/sgs"
     "cmd/sgs-register-harbor"
-    "cmd/sgs-containerd-shim"
+    "cmd/sgs-runc-wrapper"
   ];
   # test all packages
   preCheck = ''

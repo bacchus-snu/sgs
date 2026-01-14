@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sgs-runc-wrapper ./cmd/sgs-containerd-shim
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sgs-runc-wrapper ./cmd/sgs-runc-wrapper
 
 # Final stage - minimal image with just the binary
 FROM scratch

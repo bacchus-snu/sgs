@@ -35,7 +35,7 @@ This is an OCI runtime wrapper that intercepts container creation and modifies t
 
 ```bash
 # Static binary (recommended for node deployment)
-CGO_ENABLED=0 go build -o sgs-runc-wrapper ./cmd/sgs-containerd-shim
+CGO_ENABLED=0 go build -o sgs-runc-wrapper ./cmd/sgs-runc-wrapper
 
 # Or use make
 make sgs-runc-wrapper

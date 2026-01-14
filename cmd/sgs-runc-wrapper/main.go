@@ -1,4 +1,4 @@
-// Package main implements the SGS OCI Runtime Wrapper.
+// Package main implements the SGS OCI runtime wrapper binary `sgs-runc-wrapper`.
 //
 // This program wraps runc (or any OCI runtime) and intercepts the "create"
 // command to modify the OCI spec's Root.Path. This provides true rootfs
@@ -11,7 +11,7 @@
 //  4. Calls the real runc with the modified config
 //
 // Installation:
-//  1. Build: go build -o sgs-runc-wrapper ./cmd/sgs-containerd-shim
+//  1. Build: go build -o sgs-runc-wrapper ./cmd/sgs-runc-wrapper
 //  2. Install: cp sgs-runc-wrapper /usr/local/bin/
 //  3. Configure containerd (see below)
 //
@@ -56,6 +56,8 @@ func main() {
 	if err == nil {
 		log.SetOutput(logFile)
 		defer logFile.Close()
+	} else {
+		fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: failed to open log file /var/log/sgs-runc-wrapper.log: %v\n", err)
 	}
 
 	args := os.Args[1:]
@@ -80,8 +82,8 @@ func main() {
 	// If this is a create command, potentially modify the config
 	if isCreate && bundlePath != "" {
 		if err := maybeModifyRootfs(bundlePath); err != nil {
-			log.Printf("Warning: failed to modify rootfs: %v", err)
-			// Continue anyway - better to fail in runc than here
+			log.Printf("Warning: continuing without SGS rootfs modification; this is expected for non-SGS containers but may indicate a problem (e.g., failed to read or parse config.json): %v", err)
+			// Continue anyway so that non-SGS containers still run; runc will surface any fatal errors
 		}
 	}
 
@@ -144,6 +146,15 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	log.Printf("PVC host path: %s", pvcHostPath)
 
+	// Validate that the PVC path exists and is a directory
+	pvcInfo, err := os.Stat(pvcHostPath)
+	if err != nil {
+		return fmt.Errorf("PVC host path validation failed: %w", err)
+	}
+	if !pvcInfo.IsDir() {
+		return fmt.Errorf("PVC host path is not a directory: %s", pvcHostPath)
+	}
+
 	// Store the original root path for debugging
 	originalRoot := spec.Root.Path
 	log.Printf("Original root path: %s", originalRoot)
@@ -190,13 +201,17 @@ func maybeModifyRootfs(bundlePath string) error {
 //   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~csi/<pvc-name>/mount
 //   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~<type>/<pvc-name>
 //
-// We search for the PVC name in the mount source path.
+// We search for the PVC name as a path segment in the mount source path.
 func findPVCMountSource(spec *specs.Spec, pvcName string) string {
 	for _, mount := range spec.Mounts {
-		// Check if PVC name appears in the source path
-		if strings.Contains(mount.Source, pvcName) {
-			log.Printf("Found PVC mount by name '%s': %s -> %s", pvcName, mount.Source, mount.Destination)
-			return mount.Source
+		// Normalize and split the source path into segments, then look for pvcName as a full segment.
+		cleanSource := filepath.Clean(mount.Source)
+		segments := strings.Split(cleanSource, string(os.PathSeparator))
+		for _, segment := range segments {
+			if segment == pvcName {
+				log.Printf("Found PVC mount by name '%s': %s -> %s", pvcName, mount.Source, mount.Destination)
+				return mount.Source
+			}
 		}
 	}
 
