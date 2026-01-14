@@ -35,6 +35,8 @@ Note: While this wraps runc specifically, the runc path can be configured via th
 
 ### 1. Build the Wrapper
 
+Run these commands from the repository root directory:
+
 ```bash
 # Static binary (recommended for node deployment)
 CGO_ENABLED=0 go build -o sgs-runc-wrapper ./cmd/sgs-runc-wrapper

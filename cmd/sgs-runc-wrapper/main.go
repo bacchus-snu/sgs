@@ -67,9 +67,29 @@ func getRuncPath() string {
 		log.Printf("Using runc path from %s: %s", envRuncPath, path)
 		return path
 	}
+	// Try to find runc via PATH, but ensure we don't return ourselves (infinite recursion)
 	if path, err := exec.LookPath("runc"); err == nil {
-		log.Printf("Found runc via PATH: %s", path)
-		return path
+		// Check if the found path is our own executable
+		if selfPath, selfErr := os.Executable(); selfErr == nil {
+			// Resolve symlinks for accurate comparison
+			resolvedPath, _ := filepath.EvalSymlinks(path)
+			resolvedSelf, _ := filepath.EvalSymlinks(selfPath)
+			if resolvedPath == "" {
+				resolvedPath = path
+			}
+			if resolvedSelf == "" {
+				resolvedSelf = selfPath
+			}
+			if resolvedPath != resolvedSelf {
+				log.Printf("Found runc via PATH: %s", path)
+				return path
+			}
+			log.Printf("Warning: LookPath returned our own executable, skipping")
+		} else {
+			// Can't determine self path, use found path anyway
+			log.Printf("Found runc via PATH: %s", path)
+			return path
+		}
 	}
 	log.Printf("Using default runc path: %s", defaultRuncPath)
 	return defaultRuncPath
@@ -257,16 +277,28 @@ func maybeModifyRootfs(bundlePath string) error {
 //   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~csi/<pvc-name>/mount
 //   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~<type>/<pvc-name>
 //
-// We search for the PVC name as a path segment in the mount source path.
+// We search for the PVC name as a path segment in kubelet volume paths.
 func findPVCMountSource(spec *specs.Spec, pvcName string) string {
 	for _, mount := range spec.Mounts {
-		// Normalize and split the source path into segments, then look for pvcName as a full segment.
+		// First, verify this is a kubelet volume path to avoid false positives
+		if !strings.HasPrefix(mount.Source, kubeletVolumesPrefix) {
+			continue
+		}
+
+		// Normalize and split the source path into segments
 		cleanSource := filepath.Clean(mount.Source)
 		segments := strings.Split(cleanSource, string(os.PathSeparator))
-		for _, segment := range segments {
-			if segment == pvcName {
-				log.Printf("Found PVC mount by name '%s': %s -> %s", pvcName, mount.Source, mount.Destination)
-				return mount.Source
+
+		// Look for the "volumes" segment and check if PVC name follows the expected pattern:
+		// .../volumes/kubernetes.io~<type>/<pvc-name>/...
+		for i, segment := range segments {
+			if segment == "volumes" && i+2 < len(segments) {
+				// The segment after "volumes" should be kubernetes.io~<type>
+				// The segment after that should be the PVC name
+				if strings.HasPrefix(segments[i+1], "kubernetes.io~") && segments[i+2] == pvcName {
+					log.Printf("Found PVC mount by name '%s': %s -> %s", pvcName, mount.Source, mount.Destination)
+					return mount.Source
+				}
 			}
 		}
 	}
