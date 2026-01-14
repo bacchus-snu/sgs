@@ -32,7 +32,7 @@ spec:
           operator: Exists
           effect: NoSchedule
       
-      # Run once and exit
+      # Init container installs the binary; pause container keeps pod running
       restartPolicy: Always
       
       initContainers:
@@ -54,9 +54,9 @@ spec:
             privileged: true
       
       containers:
-        # Main container just sleeps - the init container does the work
+        # Main container keeps the pod running after init container finishes
         - name: pause
-          image: registry.k8s.io/pause:3.2
+          image: registry.k8s.io/pause:3.9
           resources:
             limits:
               memory: 16Mi

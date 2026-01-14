@@ -107,7 +107,7 @@ spec:
   containers:
     - name: main
       image: busybox:latest
-      command: ["/bin/bash"]
+      command: ["/bin/sh"]
       volumeMounts:
         # Beacon mount - any mountPath works, but must be present
         # so the wrapper can find the PVC's host path

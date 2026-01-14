@@ -30,6 +30,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -41,6 +42,9 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
+// errNoSGSAnnotation is returned when a container doesn't have SGS annotation (expected for non-SGS containers)
+var errNoSGSAnnotation = errors.New("no SGS os-volume annotation found")
+
 const (
 	// realRuncPath is the path to the actual runc binary
 	realRuncPath = "/usr/bin/runc"
@@ -51,11 +55,15 @@ const (
 )
 
 func main() {
-	// Set up logging to a file for debugging
-	logFile, err := os.OpenFile("/var/log/sgs-runc-wrapper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Set up logging to a file for debugging (0600 to protect sensitive info)
+	logFile, err := os.OpenFile("/var/log/sgs-runc-wrapper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err == nil {
 		log.SetOutput(logFile)
-		defer logFile.Close()
+		defer func() {
+			if err := logFile.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: failed to close log file: %v\n", err)
+			}
+		}()
 	} else {
 		fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: failed to open log file /var/log/sgs-runc-wrapper.log: %v\n", err)
 	}
@@ -80,10 +88,19 @@ func main() {
 	}
 
 	// If this is a create command, potentially modify the config
-	if isCreate && bundlePath != "" {
-		if err := maybeModifyRootfs(bundlePath); err != nil {
-			log.Printf("Warning: continuing without SGS rootfs modification; this is expected for non-SGS containers but may indicate a problem (e.g., failed to read or parse config.json): %v", err)
-			// Continue anyway so that non-SGS containers still run; runc will surface any fatal errors
+	if isCreate {
+		if bundlePath == "" {
+			log.Printf("Warning: 'create' command detected but no bundle path found; proceeding without SGS modification")
+		} else if err := maybeModifyRootfs(bundlePath); err != nil {
+			// Check if this is an expected "no SGS annotation" case or an actual error
+			if errors.Is(err, errNoSGSAnnotation) {
+				log.Printf("Info: %v", err)
+			} else {
+				log.Printf("Error: SGS rootfs modification failed: %v", err)
+				// For SGS containers with actual errors, fail fast rather than proceeding with wrong config
+				fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: %v\n", err)
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -123,14 +140,12 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	// Check for boot volume annotation
 	if spec.Annotations == nil {
-		log.Printf("No annotations found, skipping modification")
-		return nil
+		return errNoSGSAnnotation
 	}
 
 	bootVolumeClaim, hasBootVolume := spec.Annotations[annotationOSVolume]
 	if !hasBootVolume {
-		log.Printf("No os-volume annotation, skipping modification")
-		return nil
+		return errNoSGSAnnotation
 	}
 
 	log.Printf("Found os-volume annotation: %s", bootVolumeClaim)
@@ -141,7 +156,8 @@ func maybeModifyRootfs(bundlePath string) error {
 	pvcHostPath := findPVCMountSource(&spec, bootVolumeClaim)
 
 	if pvcHostPath == "" {
-		return fmt.Errorf("boot volume annotation present but could not find PVC mount for '%s'", bootVolumeClaim)
+		return fmt.Errorf("boot volume annotation present but could not find PVC mount for '%s'. "+
+			"Ensure the PVC exists, is mounted to the pod, and the volume mount is specified in the pod spec", bootVolumeClaim)
 	}
 
 	log.Printf("PVC host path: %s", pvcHostPath)
@@ -172,9 +188,18 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	// Remove the PVC mount from the mounts list since it's now the root.
 	// We find it by matching the source path we're using as root.
+	// Use EvalSymlinks to normalize paths and handle symlinks/bind mounts.
+	normalizedPVCPath, _ := filepath.EvalSymlinks(pvcHostPath)
+	if normalizedPVCPath == "" {
+		normalizedPVCPath = pvcHostPath
+	}
 	filteredMounts := make([]specs.Mount, 0, len(spec.Mounts))
 	for _, mount := range spec.Mounts {
-		if mount.Source == pvcHostPath {
+		normalizedSource, _ := filepath.EvalSymlinks(mount.Source)
+		if normalizedSource == "" {
+			normalizedSource = mount.Source
+		}
+		if normalizedSource == normalizedPVCPath || mount.Source == pvcHostPath {
 			log.Printf("Removing PVC mount (now root): %s -> %s", mount.Source, mount.Destination)
 			continue
 		}
@@ -182,13 +207,13 @@ func maybeModifyRootfs(bundlePath string) error {
 	}
 	spec.Mounts = filteredMounts
 
-	// Write back the modified config
+	// Write back the modified config (0600 to protect sensitive info)
 	modifiedData, err := json.MarshalIndent(&spec, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal modified config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, modifiedData, 0644); err != nil {
+	if err := os.WriteFile(configPath, modifiedData, 0600); err != nil {
 		return fmt.Errorf("failed to write modified config.json: %w", err)
 	}
 

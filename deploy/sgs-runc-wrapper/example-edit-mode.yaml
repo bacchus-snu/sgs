@@ -23,14 +23,14 @@ spec:
   containers:
     - name: main
       image: busybox:latest
-      command: ["/bin/bash"]
+      command: ["/bin/sh"]
       stdin: true
       tty: true
       volumeMounts:
         # Beacon mount - Kubelet attaches PVC here,
         # sgs-runc-wrapper uses its source as Root.Path,
         # any mountPath is fine but you need to mention it,
-        # otherwise, the shim cannot find the PVC mount.
+        # otherwise, the wrapper cannot find the PVC mount.
         - name: boot-volume
           mountPath: /var/lib/sgs/boot
       resources:
