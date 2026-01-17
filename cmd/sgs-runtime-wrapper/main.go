@@ -381,10 +381,11 @@ func findPVCMountSource(spec *specs.Spec, pvcName string) string {
 		}
 	}
 
-	// Fallback: if PVC name not found directly, log all mounts for debugging
+	// Fallback: if PVC name not found directly, log all mounts for debugging.
+	// Only log mount destinations to avoid exposing host filesystem paths.
 	log.Printf("Could not find mount with PVC name '%s' in source path", pvcName)
 	for i, mount := range spec.Mounts {
-		log.Printf("  Mount[%d]: %s -> %s", i, mount.Source, mount.Destination)
+		log.Printf("  Mount[%d]: dest=%s", i, mount.Destination)
 	}
 
 	return ""
