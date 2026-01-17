@@ -12,10 +12,10 @@
 //  5. Calls the real runtime (runc or nvidia-container-runtime.real) with modified config
 //
 // Dual-Mode Support:
-//  - Nvidia mode: Symlink /usr/bin/nvidia-container-runtime → sgs-runtime-wrapper
-//               Calls /usr/bin/nvidia-container-runtime.real after modification
-//  - Runc mode: Use RuntimeClass with BinaryName = /usr/local/bin/sgs-runtime-wrapper
-//              Calls /usr/bin/runc after modification
+//   - Nvidia mode: Symlink /usr/bin/nvidia-container-runtime → sgs-runtime-wrapper
+//     Calls /usr/bin/nvidia-container-runtime.real after modification
+//   - Runc mode: Use RuntimeClass with BinaryName = /usr/local/bin/sgs-runtime-wrapper
+//     Calls /usr/bin/runc after modification
 //
 // Installation (Nvidia GPU hijacking):
 //  1. Build: go build -o sgs-runtime-wrapper ./cmd/sgs-runtime-wrapper
@@ -186,9 +186,6 @@ func main() {
 
 	args := os.Args[1:]
 
-	// Detect and log wrapper mode early
-	mode := detectWrapperMode()
-	log.Printf("sgs-runtime-wrapper started in %s mode", mode)
 	log.Printf("sgs-runtime-wrapper called with args: %v", args)
 
 	// Look for "create" command and bundle path
