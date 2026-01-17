@@ -193,9 +193,9 @@ envWrapperMode = "SGS_WRAPPER_MODE"
 - `getRuntimePath()`: Replaces `getRuncPath()`, supports both modes
 
 **Modified behavior**:
-- Line 115: Mode detection at startup
-- Line 111-132: Nvidia runtime discovery with fallback
-- Line 150: Correct argv[0] based on runtime type (`nvidia-container-runtime.real` vs `runc`)
+- Mode detection at startup
+- Nvidia runtime discovery with fallback
+- Correct argv[0] based on runtime type (`nvidia-container-runtime.real` vs `runc`)
 
 ### Security Considerations
 
