@@ -1,26 +1,34 @@
-// Package main implements the SGS OCI runtime wrapper binary `sgs-runc-wrapper`.
+// Package main implements the SGS OCI runtime wrapper binary `sgs-runtime-wrapper`.
 //
-// This program wraps runc (or any OCI runtime) and intercepts the "create"
+// This program wraps runc or nvidia-container-runtime and intercepts the "create"
 // command to modify the OCI spec's Root.Path. This provides true rootfs
-// replacement for "Stateful Containers".
+// replacement for "Stateful Containers" with support for GPU workloads.
 //
 // How it works:
-//  1. containerd calls this wrapper instead of runc directly
-//  2. Wrapper checks if the container has SGS boot volume annotation
-//  3. If present, modifies config.json Root.Path to the PVC host path
-//  4. Calls the real runc with the modified config
+//  1. containerd calls this wrapper instead of the real runtime
+//  2. Wrapper auto-detects mode (runc or nvidia) based on invocation path
+//  3. Wrapper checks if the container has SGS boot volume annotation
+//  4. If present, modifies config.json Root.Path to the PVC host path
+//  5. Calls the real runtime (runc or nvidia-container-runtime.real) with modified config
 //
-// Installation:
-//  1. Build: go build -o sgs-runc-wrapper ./cmd/sgs-runc-wrapper
-//  2. Install: cp sgs-runc-wrapper /usr/local/bin/
-//  3. Configure containerd (see below)
+// Dual-Mode Support:
+//  - Nvidia mode: Symlink /usr/bin/nvidia-container-runtime → sgs-runtime-wrapper
+//               Calls /usr/bin/nvidia-container-runtime.real after modification
+//  - Runc mode: Use RuntimeClass with BinaryName = /usr/local/bin/sgs-runtime-wrapper
+//              Calls /usr/bin/runc after modification
 //
-// Containerd configuration (/etc/containerd/config.toml):
+// Installation (Nvidia GPU hijacking):
+//  1. Build: go build -o sgs-runtime-wrapper ./cmd/sgs-runtime-wrapper
+//  2. Install: cp sgs-runtime-wrapper /usr/local/bin/
+//  3. Rename: mv /usr/bin/nvidia-container-runtime /usr/bin/nvidia-container-runtime.real
+//  4. Symlink: ln -s /usr/local/bin/sgs-runtime-wrapper /usr/bin/nvidia-container-runtime
+//
+// For traditional runc hijacking, configure containerd (/etc/containerd/config.toml):
 //
 //	[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.sgs]
 //	  runtime_type = "io.containerd.runc.v2"
 //	  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.sgs.options]
-//	    BinaryName = "/usr/local/bin/sgs-runc-wrapper"
+//	    BinaryName = "/usr/local/bin/sgs-runtime-wrapper"
 //
 // Then in your Pod spec, use:
 //
@@ -49,8 +57,14 @@ const (
 	// defaultRuncPath is the default path to the actual runc binary
 	defaultRuncPath = "/usr/bin/runc"
 
-	// envRuncPath is the environment variable to override runc path
+	// defaultNvidiaRuntimePath is the default path to the renamed nvidia-container-runtime
+	defaultNvidiaRuntimePath = "/usr/bin/nvidia-container-runtime.real"
+
+	// envRuncPath is the environment variable to override runtime path
 	envRuncPath = "SGS_RUNC_PATH"
+
+	// envWrapperMode is the environment variable to override wrapper mode ("runc" or "nvidia")
+	envWrapperMode = "SGS_WRAPPER_MODE"
 
 	// annotationOSVolume is the annotation that triggers rootfs replacement.
 	// The value is the PVC name, which we use to find the mount source.
@@ -60,16 +74,75 @@ const (
 	kubeletVolumesPrefix = "/var/lib/kubelet/pods/"
 )
 
-// getRuncPath returns the path to the real runc binary.
-// It checks SGS_RUNC_PATH env var first, then tries exec.LookPath, finally falls back to default.
-func getRuncPath() string {
+// detectWrapperMode determines whether we're hijacking nvidia-container-runtime or runc.
+// It checks SGS_WRAPPER_MODE env var first, then auto-detects based on our executable path.
+func detectWrapperMode() string {
+	// Check manual override first
+	if mode := os.Getenv(envWrapperMode); mode != "" {
+		log.Printf("Using wrapper mode from %s: %s", envWrapperMode, mode)
+		return mode
+	}
+
+	// Auto-detect by checking our executable path
+	selfPath, err := os.Executable()
+	if err != nil {
+		log.Printf("Warning: failed to get executable path, defaulting to runc mode: %v", err)
+		return "runc"
+	}
+
+	// Resolve symlinks to see what we're actually called as
+	resolved, err := filepath.EvalSymlinks(selfPath)
+	if err != nil {
+		log.Printf("Warning: failed to resolve symlinks for %s, using original path: %v", selfPath, err)
+		resolved = selfPath
+	}
+
+	// Check if we're invoked as nvidia-container-runtime
+	if strings.Contains(resolved, "nvidia-container-runtime") {
+		log.Printf("Auto-detected nvidia mode (resolved path: %s)", resolved)
+		return "nvidia"
+	}
+
+	log.Printf("Auto-detected runc mode (resolved path: %s)", resolved)
+	return "runc"
+}
+
+// getRuntimePath returns the path to the real OCI runtime (runc or nvidia-container-runtime).
+// It checks SGS_RUNC_PATH env var first for explicit override, then auto-detects based on wrapper mode.
+func getRuntimePath() string {
+	// Explicit override always wins
 	if path := os.Getenv(envRuncPath); path != "" {
-		log.Printf("Using runc path from %s: %s", envRuncPath, path)
+		log.Printf("Using runtime path from %s: %s", envRuncPath, path)
 		return path
 	}
-	// Try to find runc via PATH, but ensure we don't return ourselves (infinite recursion)
+
+	mode := detectWrapperMode()
+	log.Printf("Detected wrapper mode: %s", mode)
+
+	if mode == "nvidia" {
+		// Find the renamed nvidia-container-runtime
+		candidates := []string{
+			defaultNvidiaRuntimePath,
+			"/usr/local/bin/nvidia-container-runtime.real",
+		}
+
+		for _, path := range candidates {
+			if info, err := os.Stat(path); err == nil && !info.IsDir() {
+				// Verify it's executable
+				if info.Mode()&0111 != 0 {
+					log.Printf("Found real nvidia-container-runtime: %s", path)
+					return path
+				}
+			}
+		}
+
+		log.Printf("Warning: nvidia-container-runtime.real not found, falling back to runc")
+		return defaultRuncPath
+	}
+
+	// Original runc discovery logic for runc mode
 	if path, err := exec.LookPath("runc"); err == nil {
-		// Check if the found path is our own executable
+		// Check if the found path is our own executable (prevent infinite recursion)
 		if selfPath, selfErr := os.Executable(); selfErr == nil {
 			// Resolve symlinks for accurate comparison
 			resolvedPath, _ := filepath.EvalSymlinks(path)
@@ -91,27 +164,31 @@ func getRuncPath() string {
 			return path
 		}
 	}
+
 	log.Printf("Using default runc path: %s", defaultRuncPath)
 	return defaultRuncPath
 }
 
 func main() {
 	// Set up logging to a file for debugging (0600 to protect sensitive info)
-	logFile, err := os.OpenFile("/var/log/sgs-runc-wrapper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	logFile, err := os.OpenFile("/var/log/sgs-runtime-wrapper.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err == nil {
 		log.SetOutput(logFile)
 		defer func() {
 			if err := logFile.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: failed to close log file: %v\n", err)
+				fmt.Fprintf(os.Stderr, "sgs-runtime-wrapper: failed to close log file: %v\n", err)
 			}
 		}()
 	} else {
-		fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: failed to open log file /var/log/sgs-runc-wrapper.log: %v\n", err)
+		fmt.Fprintf(os.Stderr, "sgs-runtime-wrapper: failed to open log file /var/log/sgs-runtime-wrapper.log: %v\n", err)
 	}
 
 	args := os.Args[1:]
 
-	log.Printf("sgs-runc-wrapper called with args: %v", args)
+	// Detect and log wrapper mode early
+	mode := detectWrapperMode()
+	log.Printf("sgs-runtime-wrapper started in %s mode", mode)
+	log.Printf("sgs-runtime-wrapper called with args: %v", args)
 
 	// Look for "create" command and bundle path
 	var bundlePath string
@@ -139,20 +216,21 @@ func main() {
 			} else {
 				log.Printf("Error: SGS rootfs modification failed: %v", err)
 				// For SGS containers with actual errors, fail fast rather than proceeding with wrong config
-				fmt.Fprintf(os.Stderr, "sgs-runc-wrapper: %v\n", err)
+				fmt.Fprintf(os.Stderr, "sgs-runtime-wrapper: %v\n", err)
 				os.Exit(1)
 			}
 		}
 	}
 
-	// Execute the real runc
-	runcPath := getRuncPath()
-	log.Printf("Executing real runc: %s %v", runcPath, args)
-	execErr := syscall.Exec(runcPath, append([]string{"runc"}, args...), os.Environ())
+	// Execute the real OCI runtime (runc or nvidia-container-runtime)
+	runtimePath := getRuntimePath()
+	argv0 := filepath.Base(runtimePath) // e.g., "nvidia-container-runtime.real" or "runc"
+	log.Printf("Executing real runtime: %s %v", runtimePath, args)
+	execErr := syscall.Exec(runtimePath, append([]string{argv0}, args...), os.Environ())
 	if execErr != nil {
-		log.Printf("Failed to exec runc: %v", execErr)
+		log.Printf("Failed to exec runtime: %v", execErr)
 		// Fallback to exec.Command if syscall.Exec fails
-		cmd := exec.Command(runcPath, args...)
+		cmd := exec.Command(runtimePath, args...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
