@@ -97,8 +97,9 @@ func detectWrapperMode() string {
 		resolved = selfPath
 	}
 
-	// Check if we're invoked as nvidia-container-runtime
-	if strings.Contains(resolved, "nvidia-container-runtime") {
+	// Check if we're invoked as nvidia-container-runtime based on the executable name only
+	base := filepath.Base(resolved)
+	if strings.Contains(base, "nvidia-container-runtime") {
 		log.Printf("Auto-detected nvidia mode (resolved path: %s)", resolved)
 		return "nvidia"
 	}
