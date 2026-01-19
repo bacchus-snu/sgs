@@ -24,9 +24,12 @@ sgs-register-harbor:
 hotreload:
 	env $$(<.env.development xargs) air
 
-.PHONY: serve-docs
-serve-docs:
-	mdbook serve docs
+.PHONY: serve-docs serve-docs-en serve-docs-ko
+serve-docs: serve-docs-en
+serve-docs-en:
+	mdbook serve docs/en
+serve-docs-ko:
+	mdbook serve docs/ko
 
 .PHONY: check
 check:

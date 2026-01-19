@@ -1,0 +1,10 @@
+[book]
+language = "ko"
+title = "서울대학교 컴퓨터공학부 GPU 서비스 3.0"
+
+[build]
+build-dir = "book"
+
+[output.html]
+additional-js = ["theme/language-switcher.js"]
+additional-css = ["theme/custom.css"]
