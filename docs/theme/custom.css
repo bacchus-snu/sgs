@@ -1,0 +1,44 @@
+/* Language toggle button styling */
+#lang-toggle {
+    padding: 5px 12px;
+    margin-right: 10px;
+    background: var(--theme-hover);
+    border: 1px solid var(--theme-popup-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#lang-toggle:hover {
+    background: var(--theme-popup-bg);
+    border-color: var(--links);
+}
+
+#lang-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Improve readability for Korean section headers in sidebar */
+.chapter li.chapter-item {
+    line-height: 1.6;
+}
+
+/* Style for language section headers in sidebar */
+.chapter li.spacer {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--sidebar-fg);
+}
+
+/* Smooth transitions for sidebar filtering */
+.chapter li {
+    transition: opacity 0.2s ease, max-height 0.2s ease;
+}
+
+.chapter li[style*="display: none"] {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+}

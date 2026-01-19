@@ -1,0 +1,10 @@
+[book]
+language = "en"
+title = "SNUCSE GPU Service 3.0"
+
+[build]
+build-dir = "book"
+
+[output.html]
+additional-js = ["theme/language-switcher.js"]
+additional-css = ["theme/custom.css"]

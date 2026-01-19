@@ -32,7 +32,7 @@ Open the SGS [workspace management page][sgs] and navigate to your workspace.
 Click the download button at the bottom of the page to download the kubeconfig
 file.
 
-![Download kubeconfig](configure-access/download-kubeconfig.png)
+![Download kubeconfig](images/configure-access/download-kubeconfig.png)
 
 Place your downloaded kubeconfig file in the default kubeconfig location
 
