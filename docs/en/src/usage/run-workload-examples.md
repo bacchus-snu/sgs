@@ -310,3 +310,52 @@ persistent volume.
 Completed pods do not use node resources. Still, it is a good idea to clean up
 completed pods you are no longer using, as they can clutter your namespace and
 may result in name collisions.
+
+## Increasing shared memory for PyTorch DataLoader
+
+By default, `/dev/shm` (shared memory) is limited to 64MB. This can cause issues
+when using PyTorch's DataLoader with multiple workers (`num_workers > 0`), as it
+relies on shared memory for inter-process communication.
+
+To increase the shared memory size, mount an `emptyDir` volume with `medium: Memory`:
+
+```yaml
+# pytorch-workload.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pytorch-workload
+spec:
+  terminationGracePeriodSeconds: 1
+  restartPolicy: Never
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+  containers:
+    - name: app
+      image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+      command: ['/bin/bash', '-c', 'df -h /dev/shm && python train.py']
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+      volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+```
+
+This mounts a memory-backed filesystem at `/dev/shm`, allowing it to use
+available memory instead of being limited to 64MB. You can verify the change:
+
+```console
+$ kubectl exec -it pytorch-workload -- df -h /dev/shm
+Filesystem      Size  Used Avail Use% Mounted on
+shm             125G     0  125G   0% /dev/shm
+```
+
+<div class="warning">
+
+The memory used by `/dev/shm` counts against your pod's memory limit. Ensure
+your pod has sufficient memory allocated.
+
+</div>

@@ -300,3 +300,52 @@ pod "gpu-workload" deleted
 완료된 Pod는 노드 자원을 사용하지 않습니다.
 그래도 더 이상 사용하지 않는 완료된 Pod를 정리하는 것이 좋습니다.
 네임스페이스가 어질러지고 이름 충돌이 발생할 수 있기 때문입니다.
+
+## PyTorch DataLoader를 위한 공유 메모리 증가
+
+기본적으로 `/dev/shm`(공유 메모리)은 64MB로 제한됩니다.
+PyTorch DataLoader에서 여러 워커를 사용할 때(`num_workers > 0`) 프로세스 간 통신에
+공유 메모리를 사용하므로 문제가 발생할 수 있습니다.
+
+공유 메모리 크기를 늘리려면 `medium: Memory`로 설정한 `emptyDir` 볼륨을 마운트하세요:
+
+```yaml
+# pytorch-workload.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pytorch-workload
+spec:
+  terminationGracePeriodSeconds: 1
+  restartPolicy: Never
+  volumes:
+    - name: dshm
+      emptyDir:
+        medium: Memory
+  containers:
+    - name: app
+      image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+      command: ['/bin/bash', '-c', 'df -h /dev/shm && python train.py']
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+      volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+```
+
+이렇게 하면 `/dev/shm`에 메모리 기반 파일시스템이 마운트되어 64MB 제한 대신
+사용 가능한 메모리를 사용할 수 있습니다. 변경 사항을 확인할 수 있습니다:
+
+```console
+$ kubectl exec -it pytorch-workload -- df -h /dev/shm
+Filesystem      Size  Used Avail Use% Mounted on
+shm             125G     0  125G   0% /dev/shm
+```
+
+<div class="warning">
+
+`/dev/shm`이 사용하는 메모리는 Pod의 메모리 제한에 포함됩니다.
+Pod에 충분한 메모리가 할당되어 있는지 확인하세요.
+
+</div>
