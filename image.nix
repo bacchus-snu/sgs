@@ -4,12 +4,13 @@
   sgs,
   cacert,
   tini,
+  busybox,
 }:
 
 dockerTools.buildLayeredImage {
   inherit (sgs) name;
 
-  contents = [ cacert ];
+  contents = [ cacert busybox ];
   config = {
     Entrypoint = [
       (lib.getExe tini)
