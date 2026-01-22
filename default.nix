@@ -25,7 +25,7 @@ buildGoModule rec {
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-OGmd54ODOsRSlI4/wKtyHLmrJWlMVaMrS7J0GC5d5z0=";
+  vendorHash = "sha256-QlZLzrUj99LeoYKL3gLIZlyrLpeGAJfAq04p2oSKq9I=";
 
   ldflags = [
     "-s"
