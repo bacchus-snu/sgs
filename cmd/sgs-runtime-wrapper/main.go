@@ -83,28 +83,16 @@ func detectWrapperMode() string {
 		return mode
 	}
 
-	// Auto-detect by checking our executable path
-	selfPath, err := os.Executable()
-	if err != nil {
-		log.Printf("Warning: failed to get executable path, defaulting to runc mode: %v", err)
-		return "runc"
-	}
-
-	// Resolve symlinks to see what we're actually called as
-	resolved, err := filepath.EvalSymlinks(selfPath)
-	if err != nil {
-		log.Printf("Warning: failed to resolve symlinks for %s, using original path: %v", selfPath, err)
-		resolved = selfPath
-	}
-
-	// Check if we're invoked as nvidia-container-runtime based on the executable name only
-	base := filepath.Base(resolved)
-	if strings.Contains(base, "nvidia-container-runtime") {
-		log.Printf("Auto-detected nvidia mode (resolved path: %s)", resolved)
+	// Auto-detect by checking how we were invoked (argv[0])
+	// This preserves the symlink name (e.g., nvidia-container-runtime) even when
+	// the symlink points to sgs-runtime-wrapper
+	invokedAs := filepath.Base(os.Args[0])
+	if strings.Contains(invokedAs, "nvidia-container-runtime") {
+		log.Printf("Auto-detected nvidia mode (invoked as: %s)", invokedAs)
 		return "nvidia"
 	}
 
-	log.Printf("Auto-detected runc mode (resolved path: %s)", resolved)
+	log.Printf("Auto-detected runc mode (invoked as: %s)", invokedAs)
 	return "runc"
 }
 
