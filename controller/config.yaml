@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Config
+clusters:
+  - name: sommelier
+    cluster:
+      certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJpVENDQVMrZ0F3SUJBZ0lRV1VZaFBwbm1wQ3NHQzY1WmNNK2pHakFLQmdncWhrak9QUVFEQWpBVk1STXcKRVFZRFZRUUtFd3ByZFdKbGNtNWxkR1Z6TUI0WERUSTBNRE13T1RBNU16ZzFNMW9YRFRNME1ETXdOekE1TXpnMQpNMW93RlRFVE1CRUdBMVVFQ2hNS2EzVmlaWEp1WlhSbGN6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VICkEwSUFCQWxsWEFGaG5DMDZxbFNzZzVsY1lMUXNKQjNDMnpqZnAveWFPYVliUjVHL1RzRWNmVlR3emRXVnVPREMKUGlOR2RDZCs2dzBQMmhJUGh1ZHR1RVhqSmJlallUQmZNQTRHQTFVZER3RUIvd1FFQXdJQ2hEQWRCZ05WSFNVRQpGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFCkZnUVU3QkNsNVZ5S0xHMGhUSm54ajZ3Szg3YUcyVEV3Q2dZSUtvWkl6ajBFQXdJRFNBQXdSUUlnS253WXVGYkUKOGM1UkRUNk10RVRDQncvek5QWDhJNGxiZkIxQWFScklxNk1DSVFEOWFuRUNlaUVkOWVFYjlCS0p4R0FCb3Y2MApuL3NqRCtQUUtzRkpPczYrUVE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      server: https://sommelier.snucse.org:6444
+  - name: cocktail
+    cluster:
+      certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJpVENDQVMrZ0F3SUJBZ0lRSDNQdFgwTHFtR3lvZVZwU1ZkZWhvVEFLQmdncWhrak9QUVFEQWpBVk1STXcKRVFZRFZRUUtFd3ByZFdKbGNtNWxkR1Z6TUI0WERUSTJNREV5TWpBNE5UVXlOVm9YRFRNMk1ERXlNREE0TlRVeQpOVm93RlRFVE1CRUdBMVVFQ2hNS2EzVmlaWEp1WlhSbGN6QlpNQk1HQnlxR1NNNDlBZ0VHQ0NxR1NNNDlBd0VICkEwSUFCTnVjOW1lZ3A4Z3J3RHdlcWVBZjdqems0ZXVSd21hcWlXTnQxTEJla1VRc09mbk1ERGJSekFjNndIMDAKSmVWSlZjbWZvOElubjFpYkIzbGtZM3kvNlY2allUQmZNQTRHQTFVZER3RUIvd1FFQXdJQ2hEQWRCZ05WSFNVRQpGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFCkZnUVVlUmo3RFd5WDBWOEhHREVZNjhvcjBUT3dDTTh3Q2dZSUtvWkl6ajBFQXdJRFNBQXdSUUlnQ2VsS292dSsKUWFiQjROMjE4a0RsWEFpRG81TGNnMFRibTI2UHBSeFJFZmdDSVFEVk1OZEM5c0lCeWluTjlUWXd3V1pKdGhoUwowcVpzMnlOTTZBQ1RMaUxRdmc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      server: https://cocktail.snucse.org:6443
+users:
+  - name: snucse-id
+    user:
+      exec:
+        apiVersion: client.authentication.k8s.io/v1beta1
+        command: kubectl
+        args:
+          - oidc-login
+          - get-token
+          - --oidc-issuer-url=https://id.snucse.org/o
+          - --oidc-client-id=kubernetes-oidc
+          - --oidc-client-secret=kubernetes-oidc
+          - --oidc-extra-scope=email
+          - --oidc-extra-scope=groups
+          - --token-cache-dir=~/.sgs/cache
+contexts:
+  - name: sgs
+    context:
+      cluster: sommelier
+      user: snucse-id
+      namespace:
+  - name: sgs-dev
+    context:
+      cluster: cocktail
+      user: snucse-id
+      namespace:
+current-context: sgs
