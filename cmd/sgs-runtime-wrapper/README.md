@@ -6,30 +6,72 @@ OCI runtime wrapper that enables PVC rootfs replacement for Stateful Containers 
 
 The `sgs-runtime-wrapper` intercepts OCI runtime calls to modify container root filesystem paths, enabling true rootfs replacement from PersistentVolumeClaims. It supports both standard runc and nvidia-container-runtime through automatic mode detection.
 
+## Requirements
+
+- **Linux kernel 5.11+** required for nested overlayfs support
+  - Ubuntu 20.04 with HWE kernel, Ubuntu 22.04+, or most 2022+ systems
+  - Check with: `uname -r`
+
 ## Features
 
 - **Dual-mode operation**: Automatically detects whether to hijack runc or nvidia-container-runtime
 - **Nvidia GPU support**: Transparently works with GPU workloads requiring nvidia-container-runtime
-- **PVC rootfs replacement**: Replaces container overlayfs root with PVC host path
-- **Annotation-based**: Triggered only when `sgs.snucse.org/os-volume` annotation is present
+- **OverlayFS-based rootfs**: Merges container image (read-only) with PVC (writable) using overlayfs
+- **Persistent changes**: All modifications persist to PVC while base image stays intact
 - **Zero overhead**: Uses `syscall.Exec()` for process replacement
-- **Security hardened**: Validates PVC paths, strict permissions, prevents infinite recursion
+- **Security hardened**: Validates PVC paths, kernel version, strict permissions
 
 ## How It Works
 
-### Architecture
+### OverlayFS Architecture
+
+The wrapper uses overlayfs to merge the container image with the PVC:
 
 ```
-Pod with nvidia.com/gpu + sgs.snucse.org/os-volume annotation
+CONTAINER VIEW (what the container sees):
+┌────────────────────────────────────────────────┐
+│  /bin/sh     ← from image (lowerdir)           │
+│  /lib/*      ← from image (lowerdir)           │
+│  /home/user  ← from PVC if modified            │
+│  /proc       ← mounted by runc (separate)      │
+└────────────────────────────────────────────────┘
+                    ↑
+              pivot_root
+                    ↑
+┌────────────────────────────────────────────────┐
+│     /pvc-host-path/merged (overlayfs mount)    │
+│  ┌──────────────────────────────────────────┐  │
+│  │ upperdir: /pvc-host-path/upper (PVC-RW)  │  │
+│  ├──────────────────────────────────────────┤  │
+│  │ lowerdir: /path/to/rootfs (image-RO)     │  │
+│  └──────────────────────────────────────────┘  │
+│  workdir: /pvc-host-path/work (kernel scratch) │
+└────────────────────────────────────────────────┘
+```
+
+**PVC Directory Structure:**
+```
+/var/lib/kubelet/pods/<pod-uid>/volumes/.../<pvc-name>/
+├── upper/     # Stores all file modifications (persistent)
+├── work/      # Kernel working directory (temporary)
+└── merged/    # Overlayfs mount point (container's root)
+```
+
+### Runtime Flow
+
+```
+Pod with nvidia.com/gpu + volume mounted at /sgs-os-volume
     ↓
 containerd → /usr/bin/nvidia-container-runtime (symlink to wrapper)
     ↓
 sgs-runtime-wrapper:
   1. Auto-detects nvidia mode from invocation path
   2. Reads OCI config.json from bundle
-  3. Finds PVC mount source from kubelet paths
-  4. Modifies Root.Path to point to PVC
-  5. Removes PVC from mounts list (now the root)
+  3. Finds PVC mount source (destination = /sgs-os-volume)
+  4. Checks kernel version (5.11+ required for nested overlay)
+  5. Creates overlayfs: image (lowerdir) + PVC (upperdir) → merged
+  6. Modifies Root.Path to point to merged directory
+  7. Removes PVC from mounts list
     ↓
 exec /usr/bin/nvidia-container-runtime.real
     ↓
@@ -37,7 +79,7 @@ nvidia-container-runtime.real → runc (with modified config)
     ↓
 Container runs with:
   - GPU access (from nvidia-container-runtime)
-  - PVC as rootfs (from wrapper modification)
+  - Overlayfs root: image binaries + persistent PVC storage
 ```
 
 ### Mode Detection
@@ -230,21 +272,27 @@ ls -la /usr/local/bin/sgs-runtime-wrapper
 
 ```bash
 # View wrapper logs
-sudo cat /var/log/sgs-runtime-wrapper.log | tail -20
+sudo cat /var/log/sgs-runtime-wrapper.log | tail -30
 
 # Look for:
-# - "sgs-runtime-wrapper started in nvidia mode"
-# - "Found real nvidia-container-runtime: /usr/bin/nvidia-container-runtime.real"
-# - "Found os-volume annotation: <pvc-name>"
-# - "Executing real runtime: /usr/bin/nvidia-container-runtime.real"
+# - "Auto-detected nvidia mode (invoked as: nvidia-container-runtime)"
+# - "Found SGS OS volume mount: <source> -> /sgs-os-volume"
+# - "Kernel version X.Y.Z supports nested overlayfs"
+# - "Mounted overlayfs: lowerdir=..., upperdir=..., merged=..."
+# - "New root path (overlay merged): ..."
+# - "Successfully modified config.json for SGS boot volume with overlayfs"
 ```
 
 ### Verify Container
 
 ```bash
-# Inside running container, check rootfs
-cat /proc/1/mountinfo | grep "/ /"
-# Should show PVC path as root, not overlayfs
+# Check kernel version (must be 5.11+)
+uname -r
+# Example: 5.15.0-generic, 6.1.0, 6.6.87
+
+# Inside running container, check rootfs is overlayfs
+cat /proc/mounts | grep " / "
+# Should show: overlay / overlay rw,lowerdir=...,upperdir=...,workdir=...
 
 # Verify GPU access
 nvidia-smi
@@ -253,9 +301,32 @@ nvidia-smi
 # Check that modifications persist
 touch /test-file
 # Restart pod, verify /test-file still exists
+
+# On host, check PVC directory structure
+ls -la /var/lib/kubelet/pods/<pod-uid>/volumes/.../<pvc>/
+# Should show: upper/  work/  merged/
 ```
 
 ## Troubleshooting
+
+### Kernel too old for nested overlayfs
+
+If you see: `kernel X.Y is too old for nested overlayfs; SGS requires kernel 5.11+`
+
+```bash
+# Check kernel version
+uname -r
+
+# Upgrade kernel (Ubuntu example)
+sudo apt update && sudo apt install linux-generic-hwe-22.04
+sudo reboot
+```
+
+### Overlayfs mount failed (EINVAL)
+
+This usually indicates nested overlayfs is not supported:
+- Verify kernel is 5.11+ with `uname -r`
+- Check wrapper logs for detailed error: `sudo tail -50 /var/log/sgs-runtime-wrapper.log`
 
 ### GPU not detected
 

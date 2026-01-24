@@ -1,6 +1,7 @@
 {
   lib,
   buildGoModule,
+  go_1_25,
   fetchNpmDeps,
   makeWrapper,
   npmHooks,
@@ -21,11 +22,11 @@ let
     env.NODE_ENV = "production";
   };
 in
-buildGoModule rec {
+(buildGoModule.override { go = go_1_25; }) rec {
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-QlZLzrUj99LeoYKL3gLIZlyrLpeGAJfAq04p2oSKq9I=";
+  vendorHash = "sha256-UvUDelsvX6EIau3DB7FQVrQQ/PDmxoU0bVET/Ckmcf4=";
 
   ldflags = [
     "-s"

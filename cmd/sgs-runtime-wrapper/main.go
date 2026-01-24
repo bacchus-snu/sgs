@@ -48,6 +48,7 @@ import (
 	"syscall"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"golang.org/x/sys/unix"
 )
 
 // errNoSGSOSVolume is returned when a container doesn't have SGS OS volume mount (expected for non-SGS containers)
@@ -72,6 +73,15 @@ const (
 
 	// kubeletVolumesPrefix is the expected prefix for kubelet-managed PVC paths
 	kubeletVolumesPrefix = "/var/lib/kubelet/pods/"
+
+	// overlayfs directory names within PVC
+	overlayUpperDir  = "upper"
+	overlayWorkDir   = "work"
+	overlayMergedDir = "merged"
+
+	// Minimum kernel version for nested overlayfs support (5.11+)
+	minKernelMajor = 5
+	minKernelMinor = 11
 )
 
 // detectWrapperMode determines whether we're hijacking nvidia-container-runtime or runc.
@@ -270,23 +280,34 @@ func maybeModifyRootfs(bundlePath string) error {
 		return fmt.Errorf("PVC host path is not a directory: %s", pvcHostPath)
 	}
 
-	// Store the original root path for debugging
+	// Store the original root path (container image rootfs) - this will be the lowerdir
 	originalRoot := spec.Root.Path
-	log.Printf("Original root path: %s", originalRoot)
+	log.Printf("Original root path (lowerdir): %s", originalRoot)
 
-	// CRITICAL: Modify the root path to point to the PVC
-	// This is the key difference from NRI - we're changing Root.Path directly
-	spec.Root.Path = pvcHostPath
+	// Resolve to absolute path if relative (OCI spec often uses relative "rootfs")
+	if !filepath.IsAbs(originalRoot) {
+		originalRoot = filepath.Join(bundlePath, originalRoot)
+		log.Printf("Resolved to absolute path: %s", originalRoot)
+	}
+
+	// Setup overlayfs: image (lowerdir) + PVC (upperdir) = merged view
+	mergedPath, err := setupOverlayfs(originalRoot, pvcHostPath)
+	if err != nil {
+		return fmt.Errorf("overlayfs setup failed: %w", err)
+	}
+
+	// Point container root to the merged overlayfs view
+	spec.Root.Path = mergedPath
 	spec.Root.Readonly = false
 
-	log.Printf("New root path: %s", spec.Root.Path)
+	log.Printf("New root path (overlay merged): %s", spec.Root.Path)
 
-	// Add annotations to track the change (for debugging)
+	// Add annotations to track the overlay configuration (for debugging)
 	if spec.Annotations == nil {
 		spec.Annotations = make(map[string]string)
 	}
-	spec.Annotations["sgs.snucse.org/original-root"] = originalRoot
-	spec.Annotations["sgs.snucse.org/boot-volume-active"] = "true"
+	spec.Annotations["sgs.snucse.org/overlay-lowerdir"] = originalRoot
+	spec.Annotations["sgs.snucse.org/overlay-upperdir"] = filepath.Join(pvcHostPath, overlayUpperDir)
 
 	// Remove the PVC mount from the mounts list since it's now the root.
 	// We find it by matching the source path we're using as root.
@@ -321,7 +342,7 @@ func maybeModifyRootfs(bundlePath string) error {
 		return fmt.Errorf("failed to write modified config.json: %w", err)
 	}
 
-	log.Printf("Successfully modified config.json for SGS boot volume")
+	log.Printf("Successfully modified config.json for SGS boot volume with overlayfs")
 	return nil
 }
 
@@ -336,5 +357,126 @@ func findSGSOSVolumeMountSource(spec *specs.Spec) string {
 		}
 	}
 	return ""
+}
+
+// checkKernelVersion verifies the kernel supports nested overlayfs (5.11+).
+// containerd's snapshotter typically uses overlayfs to prepare rootfs from image layers.
+// We use that as lowerdir, which requires kernel 5.11+ for nested overlay support.
+func checkKernelVersion() error {
+	var uname unix.Utsname
+	if err := unix.Uname(&uname); err != nil {
+		return fmt.Errorf("failed to get kernel version: %w", err)
+	}
+
+	// Convert release bytes to string (e.g., "5.15.0-generic")
+	release := unix.ByteSliceToString(uname.Release[:])
+
+	var major, minor int
+	if _, err := fmt.Sscanf(release, "%d.%d", &major, &minor); err != nil {
+		return fmt.Errorf("failed to parse kernel version '%s': %w", release, err)
+	}
+
+	if major < minKernelMajor || (major == minKernelMajor && minor < minKernelMinor) {
+		return fmt.Errorf("kernel %d.%d is too old for nested overlayfs; "+
+			"SGS requires kernel %d.%d+ (found: %s)",
+			major, minor, minKernelMajor, minKernelMinor, release)
+	}
+
+	log.Printf("Kernel version %s supports nested overlayfs", release)
+	return nil
+}
+
+// isMountpoint checks if the given path is a mount point by comparing
+// the device ID of the path and its parent directory.
+func isMountpoint(path string) bool {
+	var pathStat, parentStat unix.Stat_t
+
+	if err := unix.Stat(path, &pathStat); err != nil {
+		return false
+	}
+
+	parent := filepath.Dir(path)
+	if err := unix.Stat(parent, &parentStat); err != nil {
+		return false
+	}
+
+	// If device IDs differ, path is a mount point
+	return pathStat.Dev != parentStat.Dev
+}
+
+// clearDirectory removes all contents of a directory but keeps the directory itself.
+// This is required for overlayfs workdir which must be empty before mounting.
+func clearDirectory(path string) error {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // Directory doesn't exist, nothing to clear
+		}
+		return fmt.Errorf("failed to read directory %s: %w", path, err)
+	}
+
+	for _, entry := range entries {
+		entryPath := filepath.Join(path, entry.Name())
+		if err := os.RemoveAll(entryPath); err != nil {
+			return fmt.Errorf("failed to remove %s: %w", entryPath, err)
+		}
+	}
+
+	return nil
+}
+
+// setupOverlayfs creates an overlayfs mount with the container image as lowerdir
+// and the PVC as upperdir. Returns the path to the merged directory.
+func setupOverlayfs(lowerdir, pvcPath string) (string, error) {
+	upperDir := filepath.Join(pvcPath, overlayUpperDir)
+	workDir := filepath.Join(pvcPath, overlayWorkDir)
+	mergedDir := filepath.Join(pvcPath, overlayMergedDir)
+
+	// 1. Check kernel version (nested overlay requires 5.11+)
+	if err := checkKernelVersion(); err != nil {
+		return "", err
+	}
+
+	// 2. Create directories
+	for _, dir := range []string{upperDir, workDir, mergedDir} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return "", fmt.Errorf("failed to create %s: %w", dir, err)
+		}
+	}
+
+	// 3. Clear work directory (overlayfs requires empty workdir)
+	if err := clearDirectory(workDir); err != nil {
+		return "", fmt.Errorf("failed to clear workdir: %w", err)
+	}
+
+	// 4. Unmount if already mounted (handles container restart)
+	if isMountpoint(mergedDir) {
+		log.Printf("Detected existing mount at %s, unmounting", mergedDir)
+		if err := unix.Unmount(mergedDir, 0); err != nil {
+			log.Printf("Warning: failed to unmount existing overlay: %v; trying lazy unmount", err)
+			// Try lazy unmount as fallback
+			if err := unix.Unmount(mergedDir, unix.MNT_DETACH); err != nil {
+				return "", fmt.Errorf("failed to unmount existing overlay at %s: %w", mergedDir, err)
+			}
+		}
+	}
+
+	// 5. Mount overlayfs
+	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", lowerdir, upperDir, workDir)
+
+	if err := unix.Mount("overlay", mergedDir, "overlay", 0, opts); err != nil {
+		// Provide helpful error for nested overlay failure
+		if errors.Is(err, unix.EINVAL) {
+			return "", fmt.Errorf("overlayfs mount failed (EINVAL): this may indicate "+
+				"nested overlayfs is not supported on this kernel; "+
+				"SGS requires kernel 5.11+ for nested overlay: %w", err)
+		}
+		return "", fmt.Errorf("failed to mount overlayfs: %w", err)
+	}
+
+	log.Printf("Mounted overlayfs: lowerdir=%s, upperdir=%s, merged=%s",
+		lowerdir, upperDir, mergedDir)
+
+	return mergedDir, nil
 }
 
