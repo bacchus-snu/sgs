@@ -6,8 +6,10 @@ metadata:
   name: ws-{{ .idHash }}
   labels:
     sgs.snucse.org/id: {{ .id | quote }}
+  {{- if ne .nodegroup "graduate" }}
   annotations:
     scheduler.alpha.kubernetes.io/node-selector: node-restriction.kubernetes.io/nodegroup={{ .nodegroup }}
+  {{- end }}
 ---
 apiVersion: v1
 kind: ResourceQuota
