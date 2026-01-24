@@ -26,12 +26,12 @@ func (wf WorkerFunc) Work(ctx context.Context, vwss ValueWorkspaces) error {
 }
 
 type ValueWorkspace struct {
-	ID        int64             `json:"id"`
-	IDHash    string            `json:"idHash"`
-	Enabled   bool              `json:"enabled"`
-	Nodegroup string            `json:"nodegroup"`
-	Quotas    map[string]string `json:"quotas"`
-	Users     []string          `json:"users"`
+	ID          int64             `json:"id"`
+	IDHash      string            `json:"idHash"`
+	Enabled     bool              `json:"enabled"`
+	AccessTypes []string          `json:"accessTypes"`
+	Quotas      map[string]string `json:"quotas"`
+	Users       []string          `json:"users"`
 }
 
 type ValueWorkspaces struct {
@@ -39,13 +39,18 @@ type ValueWorkspaces struct {
 }
 
 func toVWorkspace(ws *model.Workspace) ValueWorkspace {
+	accessTypes := make([]string, len(ws.AccessTypes))
+	for i, at := range ws.AccessTypes {
+		accessTypes[i] = string(at)
+	}
+
 	vws := ValueWorkspace{
-		ID:        int64(ws.ID),
-		IDHash:    ws.ID.Hash(),
-		Enabled:   ws.Enabled,
-		Nodegroup: string(ws.Nodegroup),
-		Quotas:    make(map[string]string, len(ws.Quotas)),
-		Users:     ws.Users,
+		ID:          int64(ws.ID),
+		IDHash:      ws.ID.Hash(),
+		Enabled:     ws.Enabled,
+		AccessTypes: accessTypes,
+		Quotas:      make(map[string]string, len(ws.Quotas)),
+		Users:       ws.Users,
 	}
 	for k, v := range ws.Quotas {
 		switch k {

@@ -21,7 +21,7 @@ func queryWorkspace(ctx context.Context, tx pgx.Tx, id model.ID) (*model.Workspa
 }
 
 func queryWorkspaces(ctx context.Context, tx pgx.Tx, ids []model.ID) ([]*model.Workspace, error) {
-	rows, err := tx.Query(ctx, `SELECT id, created, enabled, nodegroup, userdata FROM workspaces WHERE id = ANY($1) ORDER BY id`, ids)
+	rows, err := tx.Query(ctx, `SELECT id, created, enabled, userdata FROM workspaces WHERE id = ANY($1) ORDER BY id`, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,9 @@ func queryWorkspaces(ctx context.Context, tx pgx.Tx, ids []model.ID) ([]*model.W
 		wsind[ws.ID] = ws
 	}
 
+	if err := fillAccessTypes(ctx, tx, ids, wsind); err != nil {
+		return nil, err
+	}
 	if err := fillQuotas(ctx, tx, ids, wsind); err != nil {
 		return nil, err
 	}
@@ -51,6 +54,23 @@ func queryWorkspaces(ctx context.Context, tx pgx.Tx, ids []model.ID) ([]*model.W
 	}
 
 	return wss, nil
+}
+
+func fillAccessTypes(ctx context.Context, tx pgx.Tx, ids []model.ID, wsind map[model.ID]*model.Workspace) error {
+	rows, err := tx.Query(ctx, `SELECT workspace_id, access_type FROM workspaces_access WHERE workspace_id = ANY($1) ORDER BY workspace_id, access_type`, ids)
+	if err != nil {
+		return err
+	}
+
+	var (
+		id         model.ID
+		accessType model.AccessType
+	)
+	_, err = pgx.ForEachRow(rows, []any{&id, &accessType}, func() error {
+		wsind[id].AccessTypes = append(wsind[id].AccessTypes, accessType)
+		return nil
+	})
+	return err
 }
 
 func fillQuotas(ctx context.Context, tx pgx.Tx, ids []model.ID, wsind map[model.ID]*model.Workspace) error {

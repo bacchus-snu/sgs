@@ -7,7 +7,8 @@ metadata:
   labels:
     sgs.snucse.org/id: {{ .id | quote }}
   annotations:
-    scheduler.alpha.kubernetes.io/node-selector: node-restriction.kubernetes.io/nodegroup={{ .nodegroup }}
+    sgs.snucse.org/access-types: {{ .accessTypes | join "," | quote }}
+    scheduler.alpha.kubernetes.io/node-selector: "{{- range $i, $at := .accessTypes }}{{- if $i }},{{ end }}sgs.snucse.org/access.{{ $at }}=true{{- end }}"
 ---
 apiVersion: v1
 kind: ResourceQuota

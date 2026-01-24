@@ -16,10 +16,10 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 	tests := map[string]testScenario{
 		"happy": func(t *testing.T, wsSvc model.WorkspaceService) {
 			want := model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Userdata:  "userdata",
-				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Userdata:    "userdata",
+				Quotas:      map[model.Resource]uint64{model.ResGPURequest: 8},
+				Users:       []string{"user1"},
 			}
 			want.ID = testWorkspaceCreate(t, wsSvc, &want, nil)
 			want.Request = want.InitialRequest()
@@ -34,7 +34,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				WorkspaceID: want.ID,
 				ByUser:      "user1",
 				Enabled:     true,
-				Nodegroup:   model.NodegroupGraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeGraduate},
 				Userdata:    "changed",
 				Quotas:      map[model.Resource]uint64{model.ResGPURequest: 4},
 				Users:       []string{"user1", "user2"},
@@ -50,7 +50,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 			want.Created = true
 			want.Enabled = true
-			want.Nodegroup = changes.Nodegroup
+			want.AccessTypes = changes.AccessTypes
 			want.Userdata = changes.Userdata
 			want.Quotas = changes.Quotas
 			want.Users = changes.Users
@@ -74,17 +74,17 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 		"ignore-fields": func(t *testing.T, wsSvc model.WorkspaceService) {
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				ID:        123,
-				Enabled:   true,
-				Nodegroup: model.NodegroupUndergraduate,
-				Userdata:  "userdata",
-				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []string{"user1"},
+				ID:          123,
+				Enabled:     true,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Userdata:    "userdata",
+				Quotas:      map[model.Resource]uint64{model.ResGPURequest: 8},
+				Users:       []string{"user1"},
 				Request: &model.WorkspaceUpdate{
 					WorkspaceID: 123,
 					ByUser:      "user1",
 					Enabled:     true,
-					Nodegroup:   model.NodegroupGraduate,
+					AccessTypes: []model.AccessType{model.AccessTypeGraduate},
 					Userdata:    "changed",
 					Quotas:      map[model.Resource]uint64{model.ResGPURequest: 4},
 					Users:       []string{"user1", "user2"},
@@ -93,90 +93,100 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 		},
 
 		"create-invalid": func(t *testing.T, wsSvc model.WorkspaceService) {
-			// invalid nodegroup
+			// invalid access type
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				Nodegroup: "invalid",
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{"invalid"},
+				Users:       []string{"user1"},
+			}, model.ErrInvalid)
+			// empty access types
+			testWorkspaceCreate(t, wsSvc, &model.Workspace{
+				AccessTypes: []model.AccessType{},
+				Users:       []string{"user1"},
+			}, model.ErrInvalid)
+			// duplicate access types
+			testWorkspaceCreate(t, wsSvc, &model.Workspace{
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate, model.AccessTypeUndergraduate},
+				Users:       []string{"user1"},
 			}, model.ErrInvalid)
 			// invalid quotas
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Quotas:    map[model.Resource]uint64{"invalid": 8},
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Quotas:      map[model.Resource]uint64{"invalid": 8},
+				Users:       []string{"user1"},
 			}, model.ErrInvalid)
 			// invalid users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     nil,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       nil,
 			}, model.ErrInvalid)
 			// duplicate users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1", "user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       []string{"user1", "user1"},
 			}, model.ErrInvalid)
 		},
 
 		"update-invalid": func(t *testing.T, wsSvc model.WorkspaceService) {
 			id := testWorkspaceCreate(t, wsSvc, &model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       []string{"user1"},
 			}, nil)
 
-			// invalid nodegroup
+			// invalid access type
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
-				Nodegroup:   "invalid",
+				AccessTypes: []model.AccessType{"invalid"},
 				Users:       []string{"user1"},
 			}, nil, model.ErrInvalid)
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
 				ByUser:      "user1",
-				Nodegroup:   "invalid",
+				AccessTypes: []model.AccessType{"invalid"},
 				Users:       []string{"user1"},
 			}, nil, model.ErrInvalid)
 			// invalid quotas
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Quotas:      map[model.Resource]uint64{"invalid": 8},
 				Users:       []string{"user1"},
 			}, nil, model.ErrInvalid)
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Quotas:      map[model.Resource]uint64{"invalid": 8},
 				Users:       []string{"user1"},
 			}, nil, model.ErrInvalid)
 			// invalid users
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       nil,
 			}, nil, model.ErrInvalid)
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       nil,
 			}, nil, model.ErrInvalid)
 			// duplicate users
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       []string{"user1", "user1"},
 			}, nil, model.ErrInvalid)
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       []string{"user1", "user1"},
 			}, nil, model.ErrInvalid)
 			// invalid self
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: id,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       []string{"user2"},
 			}, nil, model.ErrInvalid)
 		},
@@ -191,13 +201,13 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: 123,
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       []string{"user1"},
 			}, nil, model.ErrNotFound)
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: 123,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupUndergraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
 				Users:       []string{"user1"},
 			}, nil, model.ErrNotFound)
 
@@ -206,22 +216,22 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 		"userfilter": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws1 := model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       []string{"user1"},
 			}
 			ws1.ID = testWorkspaceCreate(t, wsSvc, &ws1, nil)
 			ws1.Request = ws1.InitialRequest()
 
 			ws2 := model.Workspace{
-				Nodegroup: model.NodegroupGraduate,
-				Users:     []string{"user2"},
+				AccessTypes: []model.AccessType{model.AccessTypeGraduate},
+				Users:       []string{"user2"},
 			}
 			ws2.ID = testWorkspaceCreate(t, wsSvc, &ws2, nil)
 			ws2.Request = ws2.InitialRequest()
 
 			wsAll := model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1", "user2"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       []string{"user1", "user2"},
 			}
 			wsAll.ID = testWorkspaceCreate(t, wsSvc, &wsAll, nil)
 			wsAll.Request = wsAll.InitialRequest()
@@ -244,15 +254,15 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: ws2.ID,
 				ByUser:      "user1",
-				Nodegroup:   model.NodegroupGraduate,
+				AccessTypes: []model.AccessType{model.AccessTypeGraduate},
 				Users:       []string{"user1"},
 			}, nil, model.ErrNotFound)
 		},
 
 		"enabled-created": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws := model.Workspace{
-				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+				Users:       []string{"user1"},
 			}
 			ws.ID = testWorkspaceCreate(t, wsSvc, &ws, nil)
 
@@ -261,7 +271,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: ws.ID,
 				Enabled:     true,
-				Nodegroup:   ws.Nodegroup,
+				AccessTypes: ws.AccessTypes,
 				Users:       ws.Users,
 			}, &ws, nil)
 
@@ -269,7 +279,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			testWorkspaceUpdate(t, wsSvc, &model.WorkspaceUpdate{
 				WorkspaceID: ws.ID,
 				Enabled:     false,
-				Nodegroup:   ws.Nodegroup,
+				AccessTypes: ws.AccessTypes,
 				Users:       ws.Users,
 			}, &ws, nil)
 		},

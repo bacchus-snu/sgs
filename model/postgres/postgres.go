@@ -105,14 +105,22 @@ func (svc *workspacesRepository) CreateWorkspace(ctx context.Context, ws *model.
 
 	var newWs *model.Workspace
 	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `INSERT INTO workspaces (nodegroup, userdata) VALUES ($1, $2) RETURNING id`,
-			ws.Nodegroup, ws.Userdata)
+		rows, err := tx.Query(ctx, `INSERT INTO workspaces (userdata) VALUES ($1) RETURNING id`,
+			ws.Userdata)
 		if err != nil {
 			return err
 		}
 		id, err := pgx.CollectExactlyOneRow(rows, pgx.RowTo[model.ID])
 		if err != nil {
 			return err
+		}
+
+		for _, at := range ws.AccessTypes {
+			_, err = tx.Exec(ctx, `INSERT INTO workspaces_access (workspace_id, access_type) VALUES ($1, $2)`,
+				id, at)
+			if err != nil {
+				return err
+			}
 		}
 
 		for _, user := range ws.Users {
@@ -294,13 +302,26 @@ func (svc *workspacesRepository) UpdateWorkspace(ctx context.Context, upd *model
 
 	var ws *model.Workspace
 	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `UPDATE workspaces SET created = created OR $2, enabled = $2, nodegroup = $3, userdata = $4 WHERE id = $1`,
-			upd.WorkspaceID, upd.Enabled, upd.Nodegroup, upd.Userdata)
+		tag, err := tx.Exec(ctx, `UPDATE workspaces SET created = created OR $2, enabled = $2, userdata = $3 WHERE id = $1`,
+			upd.WorkspaceID, upd.Enabled, upd.Userdata)
 		if err != nil {
 			return err
 		}
 		if tag.RowsAffected() == 0 {
 			return model.ErrNotFound
+		}
+
+		_, err = tx.Exec(ctx, `DELETE FROM workspaces_access WHERE workspace_id = $1`, upd.WorkspaceID)
+		if err != nil {
+			return err
+		}
+
+		for _, at := range upd.AccessTypes {
+			_, err = tx.Exec(ctx, `INSERT INTO workspaces_access (workspace_id, access_type) VALUES ($1, $2)`,
+				upd.WorkspaceID, at)
+			if err != nil {
+				return err
+			}
 		}
 
 		quotas := make([]model.Resource, 0, len(upd.Quotas))

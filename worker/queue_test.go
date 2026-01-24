@@ -85,8 +85,8 @@ func TestQueue(t *testing.T) {
 
 	// enabled workspace
 	ws, err := repo.Workspaces.CreateWorkspace(ctx, &model.Workspace{
-		Nodegroup: model.NodegroupUndergraduate,
-		Userdata:  "enabled",
+		AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+		Userdata:    "enabled",
 		Quotas: map[model.Resource]uint64{
 			model.ResGPURequest: 1,
 		},
@@ -99,7 +99,7 @@ func TestQueue(t *testing.T) {
 	ws, err = repo.Workspaces.UpdateWorkspace(ctx, &model.WorkspaceUpdate{
 		WorkspaceID: ws.ID,
 		Enabled:     true,
-		Nodegroup:   ws.Nodegroup,
+		AccessTypes: ws.AccessTypes,
 		Userdata:    ws.Userdata,
 		Quotas:      ws.Quotas,
 		Users:       ws.Users,
@@ -111,8 +111,8 @@ func TestQueue(t *testing.T) {
 
 	// disabled workspace
 	wsDisabled, err := repo.Workspaces.CreateWorkspace(ctx, &model.Workspace{
-		Nodegroup: model.NodegroupUndergraduate,
-		Userdata:  "enabled",
+		AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+		Userdata:    "enabled",
 		Quotas: map[model.Resource]uint64{
 			model.ResGPURequest: 1,
 		},
@@ -125,7 +125,7 @@ func TestQueue(t *testing.T) {
 	wsDisabled, err = repo.Workspaces.UpdateWorkspace(ctx, &model.WorkspaceUpdate{
 		WorkspaceID: wsDisabled.ID,
 		Enabled:     true,
-		Nodegroup:   wsDisabled.Nodegroup,
+		AccessTypes: wsDisabled.AccessTypes,
 		Userdata:    wsDisabled.Userdata,
 		Quotas:      wsDisabled.Quotas,
 		Users:       wsDisabled.Users,
@@ -136,7 +136,7 @@ func TestQueue(t *testing.T) {
 	wsDisabled, err = repo.Workspaces.UpdateWorkspace(ctx, &model.WorkspaceUpdate{
 		WorkspaceID: wsDisabled.ID,
 		Enabled:     false,
-		Nodegroup:   wsDisabled.Nodegroup,
+		AccessTypes: wsDisabled.AccessTypes,
 		Userdata:    wsDisabled.Userdata,
 		Quotas:      wsDisabled.Quotas,
 		Users:       wsDisabled.Users,
@@ -148,10 +148,10 @@ func TestQueue(t *testing.T) {
 
 	// non-created workspace
 	_, err = repo.Workspaces.CreateWorkspace(ctx, &model.Workspace{
-		Nodegroup: model.NodegroupUndergraduate,
-		Userdata:  "non-created",
-		Quotas:    map[model.Resource]uint64{},
-		Users:     []string{"user"},
+		AccessTypes: []model.AccessType{model.AccessTypeUndergraduate},
+		Userdata:    "non-created",
+		Quotas:      map[model.Resource]uint64{},
+		Users:       []string{"user"},
 	})
 	if err != nil {
 		t.Fatalf("CreateWorkspace err = %v; want nil", err)

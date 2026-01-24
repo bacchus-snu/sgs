@@ -14,15 +14,17 @@ templ PageRequestForm() {
 		<h1 class="mb-4 text-xl font-bold">Workspace request form</h1>
 		<form method="post">
 			<div class="grid grid-cols-3 gap-4">
-				<label class={ "col-start-1", classLabel } for="nodegroup">Nodegroup</label>
-				<select id="nodegroup" name="nodegroup" required>
-					<option value="">Select a nodegroup</option>
-					for _, ng := range model.Nodegroups {
-						if slices.Contains(ctxUser(ctx).Groups, string(ng)) {
-							<option value={ string(ng) }>{ string(ng) }</option>
+				<label class={ "col-start-1", classLabel } for="access">Access Types</label>
+				<div class="col-span-2 flex flex-col space-y-2">
+					for _, at := range model.AccessTypes {
+						if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(at)) {
+							<label class="flex items-center gap-2">
+								<input type="checkbox" name="access" value={ string(at) } required/>
+								<span class="capitalize">{ string(at) }</span>
+							</label>
 						}
 					}
-				</select>
+				</div>
 				<label class={ "col-start-1", classLabel } for="userdata">Reason</label>
 				<textarea class="resize-none" id="userdata" name="userdata" rows="10" placeholder={ reasonPlaceholder } required></textarea>
 				@reqQuotaInput("GPUs", "quota-gpu", "")

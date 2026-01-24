@@ -75,30 +75,47 @@ func handleRequestWorkspaceForm() echo.HandlerFunc {
 	}
 }
 
-// Check whether the user is allowed to request a workspace in the given
-// nodegroup.
-func checkNodegroups(user *auth.User, nodegroup string) error {
-	if !model.Nodegroup(nodegroup).Valid() {
+// Check whether the user is allowed to request a workspace with the given
+// access types. Admins can request any access type. Regular users must have ALL access types.
+func checkAccessTypes(user *auth.User, accessTypes []string) error {
+	if len(accessTypes) == 0 {
 		return echo.ErrBadRequest
 	}
-	if slices.Contains(user.Groups, nodegroup) {
+
+	// Validate all access types are valid
+	for _, at := range accessTypes {
+		if !model.AccessType(at).Valid() {
+			return echo.ErrBadRequest
+		}
+	}
+
+	// Admins can request any access type
+	if user.IsAdmin() {
 		return nil
 	}
-	return echo.ErrForbidden
+
+	// User must have ALL access types (per user requirement)
+	for _, at := range accessTypes {
+		if !slices.Contains(user.Groups, at) {
+			return echo.ErrForbidden
+		}
+	}
+
+	return nil
 }
 
 func handleRequestWorkspace(
 	wsSvc model.WorkspaceService,
 ) echo.HandlerFunc {
 	type formData struct {
-		Nodegroup          string `form:"nodegroup"`
-		Userdata           string `form:"userdata"`
-		QuotaGPU           uint64 `form:"quota-gpu"`
-		QuotaStorage       uint64 `form:"quota-storage"`
-		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
-		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
-		QuotaCPURequest    uint64 `form:"quota-cpu-requests"`
-		QuotaCPULimit      uint64 `form:"quota-cpu-limits"`
+		AccessTypes        []string `form:"access"`
+		Userdata           string   `form:"userdata"`
+		QuotaGPU           uint64   `form:"quota-gpu"`
+		QuotaStorage       uint64   `form:"quota-storage"`
+		QuotaMemoryRequest uint64   `form:"quota-memory-requests"`
+		QuotaMemoryLimit   uint64   `form:"quota-memory-limits"`
+		QuotaCPURequest    uint64   `form:"quota-cpu-requests"`
+		QuotaCPULimit      uint64   `form:"quota-cpu-limits"`
 	}
 
 	return func(c echo.Context) error {
@@ -108,9 +125,15 @@ func handleRequestWorkspace(
 		}
 		user := c.Get("user").(*auth.User)
 
+		// Convert strings to AccessType slice
+		accessTypes := make([]model.AccessType, len(req.AccessTypes))
+		for i, at := range req.AccessTypes {
+			accessTypes[i] = model.AccessType(at)
+		}
+
 		ws := model.Workspace{
-			Nodegroup: model.Nodegroup(req.Nodegroup),
-			Userdata:  req.Userdata,
+			AccessTypes: accessTypes,
+			Userdata:    req.Userdata,
 			Quotas: map[model.Resource]uint64{
 				model.ResGPURequest:     req.QuotaGPU,
 				model.ResStorageRequest: req.QuotaStorage,
@@ -126,7 +149,7 @@ func handleRequestWorkspace(
 			return echo.ErrBadRequest
 		}
 
-		if err := checkNodegroups(user, req.Nodegroup); err != nil {
+		if err := checkAccessTypes(user, req.AccessTypes); err != nil {
 			return err
 		}
 
@@ -143,16 +166,16 @@ func handleUpdateWorkspace(
 	wsSvc model.WorkspaceService,
 ) echo.HandlerFunc {
 	type formData struct {
-		Enabled            string `form:"enabled"`
-		Nodegroup          string `form:"nodegroup"`
-		Userdata           string `form:"userdata"`
-		QuotaGPU           uint64 `form:"quota-gpu"`
-		QuotaStorage       uint64 `form:"quota-storage"`
-		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
-		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
-		QuotaCPURequest    uint64 `form:"quota-cpu-requests"`
-		QuotaCPULimit      uint64 `form:"quota-cpu-limits"`
-		Action             string `form:"action"`
+		Enabled            string   `form:"enabled"`
+		AccessTypes        []string `form:"access"`
+		Userdata           string   `form:"userdata"`
+		QuotaGPU           uint64   `form:"quota-gpu"`
+		QuotaStorage       uint64   `form:"quota-storage"`
+		QuotaMemoryRequest uint64   `form:"quota-memory-requests"`
+		QuotaMemoryLimit   uint64   `form:"quota-memory-limits"`
+		QuotaCPURequest    uint64   `form:"quota-cpu-requests"`
+		QuotaCPULimit      uint64   `form:"quota-cpu-limits"`
+		Action             string   `form:"action"`
 	}
 
 	return func(c echo.Context) error {
@@ -179,11 +202,17 @@ func handleUpdateWorkspace(
 			return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
 		}
 
+		// Convert strings to AccessType slice
+		accessTypes := make([]model.AccessType, len(req.AccessTypes))
+		for i, at := range req.AccessTypes {
+			accessTypes[i] = model.AccessType(at)
+		}
+
 		upd := model.WorkspaceUpdate{
 			WorkspaceID: id,
 			ByUser:      user.Username,
 			Enabled:     req.Enabled == "on",
-			Nodegroup:   model.Nodegroup(req.Nodegroup),
+			AccessTypes: accessTypes,
 			Userdata:    req.Userdata,
 			Quotas: map[model.Resource]uint64{
 				model.ResGPURequest:     req.QuotaGPU,
@@ -209,7 +238,7 @@ func handleUpdateWorkspace(
 		var ws *model.Workspace
 		switch req.Action {
 		case "request":
-			if err := checkNodegroups(user, req.Nodegroup); err != nil {
+			if err := checkAccessTypes(user, req.AccessTypes); err != nil {
 				return err
 			}
 			ws, err = wsSvc.RequestUpdateWorkspace(c.Request().Context(), &upd)

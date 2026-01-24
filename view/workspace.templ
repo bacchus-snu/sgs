@@ -21,6 +21,14 @@ var (
 		[]string{"text-red-600", "outline-red-600", "hover:bg-red-200", "focus:bg-red-200"}...)
 )
 
+func accessTypesToStrings(ats []model.AccessType) []string {
+	result := make([]string, len(ats))
+	for i, at := range ats {
+		result[i] = string(at)
+	}
+	return result
+}
+
 templ PageWorkspaceList(wss []*model.Workspace) {
 	@page("Workspaces") {
 		<h1 class="mb-4 text-xl font-bold">My workspaces</h1>
@@ -35,6 +43,7 @@ templ PageWorkspaceList(wss []*model.Workspace) {
 						</div>
 						<div>
 							<span class="text-gray-500">Users: { strings.Join(ws.Users, ", ") }</span>
+							<span class="text-gray-500">Access: { strings.Join(accessTypesToStrings(ws.AccessTypes), ", ") }</span>
 							<span class="text-gray-500">GPU quota: { fmt.Sprint(ws.Quotas[model.ResGPURequest]) }</span>
 						</div>
 					</li>
@@ -52,7 +61,7 @@ func wsUpdated(ws *model.Workspace) *model.Workspace {
 
 	newWS := *ws
 	newWS.Enabled = ws.Request.Enabled
-	newWS.Nodegroup = ws.Request.Nodegroup
+	newWS.AccessTypes = ws.Request.AccessTypes
 	newWS.Userdata = ws.Request.Userdata
 	newWS.Quotas = ws.Request.Quotas
 	newWS.Users = ws.Request.Users
@@ -105,18 +114,24 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 			<label class={ classLabel }>Enabled</label>
 			<input class={ "justify-self-center", "self-center", classDisabled } type="checkbox" checked?={ ws.Enabled } disabled/>
 			<input class="justify-self-center self-center" type="checkbox" id="enabled" name="enabled" checked?={ newWS.Enabled }/>
-			<label class={ classLabel }>Nodegroup</label>
-			<select class={ classDisabled } disabled>
-				<option>{ string(ws.Nodegroup) }</option>
-			</select>
-			<select id="nodegroup" name="nodegroup" required>
-				<option value="">Select a nodegroup</option>
-				for _, ng := range model.Nodegroups {
-					if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(ng)) {
-						<option value={ string(ng) } selected?={ ng == newWS.Nodegroup }>{ string(ng) }</option>
+			<label class={ classLabel }>Access Types</label>
+			<div class="flex flex-wrap gap-2">
+				for _, at := range ws.AccessTypes {
+					<span class="rounded-full border border-gray-500 bg-gray-100 px-3 py-1 text-sm capitalize">
+						{ string(at) }
+					</span>
+				}
+			</div>
+			<div class="flex flex-col space-y-2">
+				for _, at := range model.AccessTypes {
+					if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(at)) {
+						<label class="flex items-center gap-2">
+							<input type="checkbox" name="access" value={ string(at) } checked?={ slices.Contains(newWS.AccessTypes, at) }/>
+							<span class="capitalize">{ string(at) }</span>
+						</label>
 					}
 				}
-			</select>
+			</div>
 			<label class={ classLabel }>Reason</label>
 			<textarea class={ "resize-none", classDisabled } rows="10" disabled>{ ws.Userdata }</textarea>
 			<textarea class="resize-none" id="userdata" name="userdata" rows="10" required>{ newWS.Userdata }</textarea>

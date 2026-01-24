@@ -11,6 +11,7 @@ import (
 
 func cloneWorkspace(ws *model.Workspace) *model.Workspace {
 	out := *ws
+	out.AccessTypes = slices.Clone(out.AccessTypes)
 	out.Quotas = maps.Clone(out.Quotas)
 	out.Users = slices.Clone(out.Users)
 	out.Request = cloneWorkspaceRequest(out.Request)
@@ -23,6 +24,7 @@ func cloneWorkspaceRequest(upd *model.WorkspaceUpdate) *model.WorkspaceUpdate {
 	}
 
 	out := *upd
+	out.AccessTypes = slices.Clone(out.AccessTypes)
 	out.Quotas = maps.Clone(out.Quotas)
 	out.Users = slices.Clone(out.Users)
 	return &out
@@ -60,7 +62,7 @@ func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Worksp
 		WorkspaceID: newWS.ID,
 		ByUser:      newWS.Users[0],
 		Enabled:     true,
-		Nodegroup:   newWS.Nodegroup,
+		AccessTypes: slices.Clone(newWS.AccessTypes),
 		Userdata:    newWS.Userdata,
 		Quotas:      maps.Clone(newWS.Quotas),
 		Users:       slices.Clone(newWS.Users),
@@ -182,7 +184,7 @@ func (svc *mockWorkspaces) UpdateWorkspace(ctx context.Context, upd *model.Works
 
 	ws.Enabled = upd.Enabled
 	ws.Created = ws.Created || ws.Enabled // latch on
-	ws.Nodegroup = upd.Nodegroup
+	ws.AccessTypes = slices.Clone(upd.AccessTypes)
 	ws.Userdata = upd.Userdata
 	ws.Quotas = maps.Clone(upd.Quotas)
 	ws.Users = slices.Clone(upd.Users)

@@ -4,13 +4,33 @@ import (
 	"context"
 )
 
+type AccessType string
+
+const (
+	AccessTypeUndergraduate AccessType = "undergraduate"
+	AccessTypeGraduate      AccessType = "graduate"
+)
+
+var AccessTypes = []AccessType{
+	AccessTypeUndergraduate,
+	AccessTypeGraduate,
+}
+
+func (a AccessType) Valid() bool {
+	switch a {
+	case AccessTypeUndergraduate, AccessTypeGraduate:
+		return true
+	}
+	return false
+}
+
 type Workspace struct {
 	ID
 
-	Created   bool
-	Enabled   bool
-	Nodegroup Nodegroup
-	Userdata  string
+	Created     bool
+	Enabled     bool
+	AccessTypes []AccessType
+	Userdata    string
 
 	Quotas map[Resource]uint64
 	Users  []string
@@ -19,15 +39,35 @@ type Workspace struct {
 }
 
 func (ws Workspace) Valid() bool {
-	if !ws.Nodegroup.Valid() {
+	// Must have at least one access type
+	if len(ws.AccessTypes) == 0 {
 		return false
 	}
+
+	// Validate each access type
+	for _, at := range ws.AccessTypes {
+		if !at.Valid() {
+			return false
+		}
+	}
+
+	// Check for duplicates
+	seen := make(map[AccessType]bool)
+	for _, at := range ws.AccessTypes {
+		if seen[at] {
+			return false // duplicate found
+		}
+		seen[at] = true
+	}
+
+	// Validate quotas
 	for quota := range ws.Quotas {
 		if !quota.Valid() {
 			return false
 		}
 	}
 
+	// Validate users
 	uniqueUsers := make(map[string]struct{})
 	for _, user := range ws.Users {
 		uniqueUsers[user] = struct{}{}
@@ -50,7 +90,7 @@ func (ws *Workspace) InitialRequest() *WorkspaceUpdate {
 		WorkspaceID: ws.ID,
 		ByUser:      ws.Users[0],
 		Enabled:     true,
-		Nodegroup:   ws.Nodegroup,
+		AccessTypes: ws.AccessTypes,
 		Userdata:    ws.Userdata,
 		Quotas:      ws.Quotas,
 		Users:       ws.Users,
@@ -61,9 +101,9 @@ type WorkspaceUpdate struct {
 	WorkspaceID ID
 	ByUser      string
 
-	Enabled   bool
-	Nodegroup Nodegroup
-	Userdata  string
+	Enabled     bool
+	AccessTypes []AccessType
+	Userdata    string
 
 	Quotas map[Resource]uint64
 	Users  []string
@@ -71,15 +111,36 @@ type WorkspaceUpdate struct {
 
 func (ws WorkspaceUpdate) Valid() bool {
 	// don't check ByUser, may be empty if admin
-	if !ws.Nodegroup.Valid() {
+
+	// Must have at least one access type
+	if len(ws.AccessTypes) == 0 {
 		return false
 	}
+
+	// Validate each access type
+	for _, at := range ws.AccessTypes {
+		if !at.Valid() {
+			return false
+		}
+	}
+
+	// Check for duplicates
+	seen := make(map[AccessType]bool)
+	for _, at := range ws.AccessTypes {
+		if seen[at] {
+			return false
+		}
+		seen[at] = true
+	}
+
+	// Validate quotas
 	for quota := range ws.Quotas {
 		if !quota.Valid() {
 			return false
 		}
 	}
 
+	// Validate users
 	uniqueUsers := make(map[string]struct{})
 	for _, user := range ws.Users {
 		uniqueUsers[user] = struct{}{}
@@ -113,26 +174,6 @@ func (r Resource) Valid() bool {
 	case ResCPULimit, ResCPURequest,
 		ResMemoryLimit, ResMemoryRequest,
 		ResStorageRequest, ResGPURequest:
-		return true
-	}
-	return false
-}
-
-type Nodegroup string
-
-const (
-	NodegroupUndergraduate Nodegroup = "undergraduate"
-	NodegroupGraduate      Nodegroup = "graduate"
-)
-
-var Nodegroups = []Nodegroup{
-	NodegroupUndergraduate,
-	NodegroupGraduate,
-}
-
-func (n Nodegroup) Valid() bool {
-	switch n {
-	case NodegroupUndergraduate, NodegroupGraduate:
 		return true
 	}
 	return false
