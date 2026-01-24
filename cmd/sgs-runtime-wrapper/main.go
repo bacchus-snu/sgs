@@ -302,12 +302,24 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	log.Printf("New root path (overlay merged): %s", spec.Root.Path)
 
+	// Add poststop hook to unmount overlayfs when container exits
+	// Use lazy unmount (-l) to avoid "device busy" errors
+	if spec.Hooks == nil {
+		spec.Hooks = &specs.Hooks{}
+	}
+	spec.Hooks.Poststop = append(spec.Hooks.Poststop, specs.Hook{
+		Path: "/bin/umount",
+		Args: []string{"umount", "-l", mergedPath},
+	})
+	log.Printf("Added poststop hook to unmount %s", mergedPath)
+
 	// Add annotations to track the overlay configuration (for debugging)
 	if spec.Annotations == nil {
 		spec.Annotations = make(map[string]string)
 	}
 	spec.Annotations["sgs.snucse.org/overlay-lowerdir"] = originalRoot
 	spec.Annotations["sgs.snucse.org/overlay-upperdir"] = filepath.Join(pvcHostPath, overlayUpperDir)
+	spec.Annotations["sgs.snucse.org/overlay-merged"] = mergedPath
 
 	// Remove the PVC mount from the mounts list since it's now the root.
 	// We find it by matching the source path we're using as root.
