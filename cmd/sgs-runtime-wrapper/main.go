@@ -7,8 +7,8 @@
 // How it works:
 //  1. containerd calls this wrapper instead of the real runtime
 //  2. Wrapper auto-detects mode (runc or nvidia) based on invocation path
-//  3. Wrapper checks if the container has SGS boot volume annotation
-//  4. If present, modifies config.json Root.Path to the PVC host path
+//  3. Wrapper checks if the container has SGS OS volume mount at /sgs-os-volume
+//  4. If present, modifies config.json Root.Path to the PVC host path (mount source)
 //  5. Calls the real runtime (runc or nvidia-container-runtime.real) with modified config
 //
 // Dual-Mode Support:
@@ -50,8 +50,8 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
-// errNoSGSAnnotation is returned when a container doesn't have SGS annotation (expected for non-SGS containers)
-var errNoSGSAnnotation = errors.New("no SGS os-volume annotation found")
+// errNoSGSOSVolume is returned when a container doesn't have SGS OS volume mount (expected for non-SGS containers)
+var errNoSGSOSVolume = errors.New("no SGS os-volume mount found")
 
 const (
 	// defaultRuncPath is the default path to the actual runc binary
@@ -66,9 +66,9 @@ const (
 	// envWrapperMode is the environment variable to override wrapper mode ("runc" or "nvidia")
 	envWrapperMode = "SGS_WRAPPER_MODE"
 
-	// annotationOSVolume is the annotation that triggers rootfs replacement.
-	// The value is the PVC name, which we use to find the mount source.
-	annotationOSVolume = "sgs.snucse.org/os-volume"
+	// sgsOSVolumeMountPath is the guaranteed mount destination for SGS OS volumes.
+	// When CLI attaches an os-volume, it is always mounted at this path.
+	sgsOSVolumeMountPath = "/sgs-os-volume"
 
 	// kubeletVolumesPrefix is the expected prefix for kubelet-managed PVC paths
 	kubeletVolumesPrefix = "/var/lib/kubelet/pods/"
@@ -196,8 +196,8 @@ func main() {
 		if bundlePath == "" {
 			log.Printf("Warning: 'create' command detected but no bundle path found; proceeding without SGS modification")
 		} else if err := maybeModifyRootfs(bundlePath); err != nil {
-			// Check if this is an expected "no SGS annotation" case or an actual error
-			if errors.Is(err, errNoSGSAnnotation) {
+			// Check if this is an expected "no SGS OS volume" case or an actual error
+			if errors.Is(err, errNoSGSOSVolume) {
 				log.Printf("Info: %v", err)
 			} else {
 				log.Printf("Error: SGS rootfs modification failed: %v", err)
@@ -229,7 +229,7 @@ func main() {
 	}
 }
 
-// maybeModifyRootfs checks the OCI spec for SGS annotations and modifies Root.Path if needed.
+// maybeModifyRootfs checks the OCI spec for SGS OS volume mount and modifies Root.Path if needed.
 func maybeModifyRootfs(bundlePath string) error {
 	configPath := filepath.Join(bundlePath, "config.json")
 
@@ -244,32 +244,18 @@ func maybeModifyRootfs(bundlePath string) error {
 		return fmt.Errorf("failed to parse config.json: %w", err)
 	}
 
-	// Check for boot volume annotation
-	if spec.Annotations == nil {
-		return errNoSGSAnnotation
-	}
-
-	bootVolumeClaim, hasBootVolume := spec.Annotations[annotationOSVolume]
-	if !hasBootVolume {
-		return errNoSGSAnnotation
-	}
-
-	log.Printf("Found os-volume annotation: %s", bootVolumeClaim)
-
-	// Find the PVC host path by searching mounts for one containing the PVC name.
-	// Kubelet mounts PVCs at paths like:
-	// /var/lib/kubelet/pods/<uid>/volumes/kubernetes.io~csi/<pvc-name>/mount
-	pvcHostPath := findPVCMountSource(&spec, bootVolumeClaim)
+	// Find the SGS OS volume mount by its known destination path (/sgs-os-volume).
+	// When CLI attaches an os-volume, it is guaranteed to be mounted at this path.
+	pvcHostPath := findSGSOSVolumeMountSource(&spec)
 
 	if pvcHostPath == "" {
-		return fmt.Errorf("boot volume annotation present but could not find PVC mount for '%s'. "+
-			"Ensure the PVC exists, is mounted to the pod, and the volume mount is specified in the pod spec", bootVolumeClaim)
+		return errNoSGSOSVolume
 	}
 
 	log.Printf("PVC host path: %s", pvcHostPath)
 
 	// Validate that the PVC path is within expected kubelet directory to prevent
-	// malicious annotations pointing to arbitrary host directories
+	// arbitrary host directories from being used as rootfs
 	if !strings.HasPrefix(pvcHostPath, kubeletVolumesPrefix) {
 		return fmt.Errorf("PVC host path '%s' is not within expected kubelet directory '%s'; "+
 			"this may indicate a security issue or misconfiguration", pvcHostPath, kubeletVolumesPrefix)
@@ -295,7 +281,10 @@ func maybeModifyRootfs(bundlePath string) error {
 
 	log.Printf("New root path: %s", spec.Root.Path)
 
-	// Add annotations to track the change
+	// Add annotations to track the change (for debugging)
+	if spec.Annotations == nil {
+		spec.Annotations = make(map[string]string)
+	}
 	spec.Annotations["sgs.snucse.org/original-root"] = originalRoot
 	spec.Annotations["sgs.snucse.org/boot-volume-active"] = "true"
 
@@ -336,44 +325,16 @@ func maybeModifyRootfs(bundlePath string) error {
 	return nil
 }
 
-// findPVCMountSource searches mounts for one that corresponds to the given PVC.
-// Kubelet typically mounts PVCs at paths like:
-//   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~csi/<pvc-name>/mount
-//   /var/lib/kubelet/pods/<pod-uid>/volumes/kubernetes.io~<type>/<pvc-name>
-//
-// We search for the PVC name as a path segment in kubelet volume paths.
-func findPVCMountSource(spec *specs.Spec, pvcName string) string {
+// findSGSOSVolumeMountSource searches mounts for the SGS OS volume by its known destination path.
+// When CLI attaches an os-volume, it is guaranteed to be mounted at /sgs-os-volume.
+// We find this mount and return its source path (the PVC host path).
+func findSGSOSVolumeMountSource(spec *specs.Spec) string {
 	for _, mount := range spec.Mounts {
-		// First, verify this is a kubelet volume path to avoid false positives
-		if !strings.HasPrefix(mount.Source, kubeletVolumesPrefix) {
-			continue
-		}
-
-		// Normalize and split the source path into segments
-		cleanSource := filepath.Clean(mount.Source)
-		segments := strings.Split(cleanSource, string(os.PathSeparator))
-
-		// Look for the "volumes" segment and check if PVC name follows the expected pattern:
-		// .../volumes/kubernetes.io~<type>/<pvc-name>/...
-		for i, segment := range segments {
-			if segment == "volumes" && i+2 < len(segments) {
-				// The segment after "volumes" should be kubernetes.io~<type>
-				// The segment after that should be the PVC name
-				if strings.HasPrefix(segments[i+1], "kubernetes.io~") && segments[i+2] == pvcName {
-					log.Printf("Found PVC mount by name '%s': %s -> %s", pvcName, mount.Source, mount.Destination)
-					return mount.Source
-				}
-			}
+		if mount.Destination == sgsOSVolumeMountPath {
+			log.Printf("Found SGS OS volume mount: %s -> %s", mount.Source, mount.Destination)
+			return mount.Source
 		}
 	}
-
-	// Fallback: if PVC name not found directly, log all mounts for debugging.
-	// Only log mount destinations to avoid exposing host filesystem paths.
-	log.Printf("Could not find mount with PVC name '%s' in source path", pvcName)
-	for i, mount := range spec.Mounts {
-		log.Printf("  Mount[%d]: dest=%s", i, mount.Destination)
-	}
-
 	return ""
 }
 
