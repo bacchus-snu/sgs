@@ -72,6 +72,10 @@ func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Worksp
 	newWS.ID = svc.nextID
 	svc.nextID++
 	newWS.Enabled = false
+	// Set the creator's email (first user)
+	if len(newWS.Users) > 0 {
+		newWS.Users[0].Email = creatorEmail
+	}
 	newWS.Request = &model.WorkspaceUpdate{
 		WorkspaceID: newWS.ID,
 		ByUser:      newWS.Users[0].Username,
@@ -196,15 +200,23 @@ func (svc *mockWorkspaces) UpdateWorkspace(ctx context.Context, upd *model.Works
 		return nil, model.ErrNotFound
 	}
 
+	// Build map of existing user emails to preserve them
+	existingEmails := make(map[string]string)
+	for _, u := range ws.Users {
+		if u.Email != "" {
+			existingEmails[u.Username] = u.Email
+		}
+	}
+
 	ws.Enabled = upd.Enabled
 	ws.Created = ws.Created || ws.Enabled // latch on
 	ws.Nodegroup = upd.Nodegroup
 	ws.Userdata = upd.Userdata
 	ws.Quotas = maps.Clone(upd.Quotas)
-	// Convert []string to []WorkspaceUser
+	// Convert []string to []WorkspaceUser, preserving existing emails
 	newUsers := make([]model.WorkspaceUser, len(upd.Users))
 	for i, u := range upd.Users {
-		newUsers[i] = model.WorkspaceUser{Username: u}
+		newUsers[i] = model.WorkspaceUser{Username: u, Email: existingEmails[u]}
 	}
 	ws.Users = newUsers
 	sortUsers(ws.Users)

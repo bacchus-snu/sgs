@@ -53,10 +53,16 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			want.Nodegroup = changes.Nodegroup
 			want.Userdata = changes.Userdata
 			want.Quotas = changes.Quotas
-			// Convert []string to []WorkspaceUser
+			// Convert []string to []WorkspaceUser, preserving existing emails
+			existingEmails := make(map[string]string)
+			for _, u := range want.Users {
+				if u.Email != "" {
+					existingEmails[u.Username] = u.Email
+				}
+			}
 			want.Users = make([]model.WorkspaceUser, len(changes.Users))
 			for i, u := range changes.Users {
-				want.Users[i] = model.WorkspaceUser{Username: u}
+				want.Users[i] = model.WorkspaceUser{Username: u, Email: existingEmails[u]}
 			}
 			want.Request = nil
 			testWorkspaceUpdate(t, wsSvc, &changes, &want, nil)
@@ -288,7 +294,8 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.Workspace, expErr error) model.ID {
 	t.Helper()
-	got, err := wsSvc.CreateWorkspace(context.Background(), ws, "test@example.com")
+	const creatorEmail = "test@example.com"
+	got, err := wsSvc.CreateWorkspace(context.Background(), ws, creatorEmail)
 	if !errors.Is(err, expErr) {
 		t.Fatalf("CreateWorkspace(%#v) = %v; want %v", ws, err, expErr)
 	}
@@ -299,9 +306,20 @@ func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.W
 	want := *ws
 	want.ID = got.ID
 	want.Enabled = false
+	// Creator (first user) gets their email set
+	if len(want.Users) > 0 {
+		want.Users = make([]model.WorkspaceUser, len(ws.Users))
+		copy(want.Users, ws.Users)
+		want.Users[0].Email = creatorEmail
+	}
 	want.Request = want.InitialRequest()
 	if diff := cmp.Diff(got, &want, cmpopts.EquateEmpty()); diff != "" {
 		t.Fatalf("CreateWorkspace(%#v) = mismatch\n%s", ws, diff)
+	}
+
+	// Update the original workspace for subsequent test assertions
+	if len(ws.Users) > 0 {
+		ws.Users[0].Email = creatorEmail
 	}
 
 	return got.ID
