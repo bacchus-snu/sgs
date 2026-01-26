@@ -19,7 +19,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Nodegroup: model.NodegroupUndergraduate,
 				Userdata:  "userdata",
 				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}
 			want.ID = testWorkspaceCreate(t, wsSvc, &want, nil)
 			want.Request = want.InitialRequest()
@@ -53,7 +53,11 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			want.Nodegroup = changes.Nodegroup
 			want.Userdata = changes.Userdata
 			want.Quotas = changes.Quotas
-			want.Users = changes.Users
+			// Convert []string to []WorkspaceUser
+			want.Users = make([]model.WorkspaceUser, len(changes.Users))
+			for i, u := range changes.Users {
+				want.Users[i] = model.WorkspaceUser{Username: u}
+			}
 			want.Request = nil
 			testWorkspaceUpdate(t, wsSvc, &changes, &want, nil)
 
@@ -79,7 +83,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Nodegroup: model.NodegroupUndergraduate,
 				Userdata:  "userdata",
 				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 				Request: &model.WorkspaceUpdate{
 					WorkspaceID: 123,
 					ByUser:      "user1",
@@ -96,13 +100,13 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			// invalid nodegroup
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: "invalid",
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}, model.ErrInvalid)
 			// invalid quotas
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
 				Quotas:    map[model.Resource]uint64{"invalid": 8},
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}, model.ErrInvalid)
 			// invalid users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
@@ -112,14 +116,14 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			// duplicate users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1", "user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}, {Username: "user1"}},
 			}, model.ErrInvalid)
 		},
 
 		"update-invalid": func(t *testing.T, wsSvc model.WorkspaceService) {
 			id := testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}, nil)
 
 			// invalid nodegroup
@@ -207,21 +211,21 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 		"userfilter": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws1 := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}
 			ws1.ID = testWorkspaceCreate(t, wsSvc, &ws1, nil)
 			ws1.Request = ws1.InitialRequest()
 
 			ws2 := model.Workspace{
 				Nodegroup: model.NodegroupGraduate,
-				Users:     []string{"user2"},
+				Users:     []model.WorkspaceUser{{Username: "user2"}},
 			}
 			ws2.ID = testWorkspaceCreate(t, wsSvc, &ws2, nil)
 			ws2.Request = ws2.InitialRequest()
 
 			wsAll := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1", "user2"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}, {Username: "user2"}},
 			}
 			wsAll.ID = testWorkspaceCreate(t, wsSvc, &wsAll, nil)
 			wsAll.Request = wsAll.InitialRequest()
@@ -252,7 +256,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 		"enabled-created": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []string{"user1"},
+				Users:     []model.WorkspaceUser{{Username: "user1"}},
 			}
 			ws.ID = testWorkspaceCreate(t, wsSvc, &ws, nil)
 
@@ -262,7 +266,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				WorkspaceID: ws.ID,
 				Enabled:     true,
 				Nodegroup:   ws.Nodegroup,
-				Users:       ws.Users,
+				Users:       model.Usernames(ws.Users),
 			}, &ws, nil)
 
 			ws.Enabled = false
@@ -270,7 +274,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				WorkspaceID: ws.ID,
 				Enabled:     false,
 				Nodegroup:   ws.Nodegroup,
-				Users:       ws.Users,
+				Users:       model.Usernames(ws.Users),
 			}, &ws, nil)
 		},
 	}
@@ -284,7 +288,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.Workspace, expErr error) model.ID {
 	t.Helper()
-	got, err := wsSvc.CreateWorkspace(context.Background(), ws)
+	got, err := wsSvc.CreateWorkspace(context.Background(), ws, "test@example.com")
 	if !errors.Is(err, expErr) {
 		t.Fatalf("CreateWorkspace(%#v) = %v; want %v", ws, err, expErr)
 	}

@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"cmp"
 	"context"
 	"maps"
 	"slices"
@@ -8,6 +9,21 @@ import (
 
 	"github.com/bacchus-snu/sgs/model"
 )
+
+func containsUser(users []model.WorkspaceUser, username string) bool {
+	for _, u := range users {
+		if u.Username == username {
+			return true
+		}
+	}
+	return false
+}
+
+func sortUsers(users []model.WorkspaceUser) {
+	slices.SortFunc(users, func(a, b model.WorkspaceUser) int {
+		return cmp.Compare(a.Username, b.Username)
+	})
+}
 
 func cloneWorkspace(ws *model.Workspace) *model.Workspace {
 	out := *ws
@@ -44,7 +60,7 @@ func New() Repository {
 	}}
 }
 
-func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Workspace) (*model.Workspace, error) {
+func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Workspace, creatorEmail string) (*model.Workspace, error) {
 	if !ws.Valid() {
 		return nil, model.ErrInvalid
 	}
@@ -58,14 +74,14 @@ func (svc *mockWorkspaces) CreateWorkspace(ctx context.Context, ws *model.Worksp
 	newWS.Enabled = false
 	newWS.Request = &model.WorkspaceUpdate{
 		WorkspaceID: newWS.ID,
-		ByUser:      newWS.Users[0],
+		ByUser:      newWS.Users[0].Username,
 		Enabled:     true,
 		Nodegroup:   newWS.Nodegroup,
 		Userdata:    newWS.Userdata,
 		Quotas:      maps.Clone(newWS.Quotas),
-		Users:       slices.Clone(newWS.Users),
+		Users:       model.Usernames(newWS.Users),
 	}
-	slices.Sort(newWS.Users)
+	sortUsers(newWS.Users)
 
 	svc.data[newWS.ID] = newWS
 	return cloneWorkspace(newWS), nil
@@ -99,7 +115,7 @@ func (svc *mockWorkspaces) ListUserWorkspaces(ctx context.Context, user string) 
 
 	var wss []*model.Workspace
 	for _, ws := range svc.data {
-		if slices.Contains(ws.Users, user) {
+		if containsUser(ws.Users, user) {
 			wss = append(wss, cloneWorkspace(ws))
 		}
 	}
@@ -160,7 +176,7 @@ func (svc *mockWorkspaces) GetUserWorkspace(ctx context.Context, id model.ID, us
 	if !ok {
 		return nil, model.ErrNotFound
 	}
-	if !slices.Contains(ws.Users, user) {
+	if !containsUser(ws.Users, user) {
 		return nil, model.ErrNotFound
 	}
 
@@ -185,8 +201,13 @@ func (svc *mockWorkspaces) UpdateWorkspace(ctx context.Context, upd *model.Works
 	ws.Nodegroup = upd.Nodegroup
 	ws.Userdata = upd.Userdata
 	ws.Quotas = maps.Clone(upd.Quotas)
-	ws.Users = slices.Clone(upd.Users)
-	slices.Sort(ws.Users)
+	// Convert []string to []WorkspaceUser
+	newUsers := make([]model.WorkspaceUser, len(upd.Users))
+	for i, u := range upd.Users {
+		newUsers[i] = model.WorkspaceUser{Username: u}
+	}
+	ws.Users = newUsers
+	sortUsers(ws.Users)
 	ws.Request = nil
 
 	return cloneWorkspace(ws), nil
@@ -207,7 +228,7 @@ func (svc *mockWorkspaces) RequestUpdateWorkspace(ctx context.Context, upd *mode
 	if !ok {
 		return nil, model.ErrNotFound
 	}
-	if !slices.Contains(ws.Users, upd.ByUser) {
+	if !containsUser(ws.Users, upd.ByUser) {
 		return nil, model.ErrNotFound
 	}
 
@@ -224,5 +245,42 @@ func (svc *mockWorkspaces) DeleteWorkspace(ctx context.Context, id model.ID) err
 		return model.ErrNotFound
 	}
 	delete(svc.data, id)
+	return nil
+}
+
+func (svc *mockWorkspaces) ListUserInvitations(ctx context.Context, user string) ([]*model.Workspace, error) {
+	// For mock, return empty - no invitation tracking
+	return []*model.Workspace{}, nil
+}
+
+func (svc *mockWorkspaces) AcceptInvitation(ctx context.Context, workspaceID model.ID, username, email string) error {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	ws, ok := svc.data[workspaceID]
+	if !ok || !containsUser(ws.Users, username) {
+		return model.ErrNotFound
+	}
+	return nil
+}
+
+func (svc *mockWorkspaces) DeclineInvitation(ctx context.Context, workspaceID model.ID, username string) error {
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+
+	ws, ok := svc.data[workspaceID]
+	if !ok {
+		return model.ErrNotFound
+	}
+	newUsers := make([]model.WorkspaceUser, 0, len(ws.Users))
+	for _, u := range ws.Users {
+		if u.Username != username {
+			newUsers = append(newUsers, u)
+		}
+	}
+	if len(newUsers) == len(ws.Users) {
+		return model.ErrNotFound
+	}
+	ws.Users = newUsers
 	return nil
 }
