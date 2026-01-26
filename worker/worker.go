@@ -45,7 +45,7 @@ func toVWorkspace(ws *model.Workspace) ValueWorkspace {
 		Enabled:   ws.Enabled,
 		Nodegroup: string(ws.Nodegroup),
 		Quotas:    make(map[string]string, len(ws.Quotas)),
-		Users:     ws.Users,
+		Users:     model.Usernames(ws.Users),
 	}
 	for k, v := range ws.Quotas {
 		switch k {

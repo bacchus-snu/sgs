@@ -34,6 +34,13 @@ func ctxUser(ctx context.Context) *auth.User {
 	return ctx.Value(ctxKeyUser).(*auth.User)
 }
 
+func ctxUserOrNil(ctx context.Context) *auth.User {
+	if v := ctx.Value(ctxKeyUser); v != nil {
+		return v.(*auth.User)
+	}
+	return nil
+}
+
 func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error {
 	ctx := c.Request().Context()
 

@@ -75,17 +75,21 @@ func fillQuotas(ctx context.Context, tx pgx.Tx, ids []model.ID, wsind map[model.
 }
 
 func fillUsers(ctx context.Context, tx pgx.Tx, idx []model.ID, wsind map[model.ID]*model.Workspace) error {
-	rows, err := tx.Query(ctx, `SELECT workspace_id, username FROM workspaces_users WHERE workspace_id = ANY($1) ORDER BY username`, idx)
+	rows, err := tx.Query(ctx, `SELECT workspace_id, username, COALESCE(email, '') FROM workspaces_users WHERE workspace_id = ANY($1) ORDER BY username`, idx)
 	if err != nil {
 		return err
 	}
 
 	var (
-		id   model.ID
-		user string
+		id    model.ID
+		user  string
+		email string
 	)
-	_, err = pgx.ForEachRow(rows, []any{&id, &user}, func() error {
-		wsind[id].Users = append(wsind[id].Users, user)
+	_, err = pgx.ForEachRow(rows, []any{&id, &user, &email}, func() error {
+		wsind[id].Users = append(wsind[id].Users, model.WorkspaceUser{
+			Username: user,
+			Email:    email,
+		})
 		return nil
 	})
 	return err

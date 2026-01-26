@@ -42,6 +42,13 @@ func ctxUser(ctx context.Context) *auth.User {
 	return ctx.Value(ctxKeyUser).(*auth.User)
 }
 
+func ctxUserOrNil(ctx context.Context) *auth.User {
+	if v := ctx.Value(ctxKeyUser); v != nil {
+		return v.(*auth.User)
+	}
+	return nil
+}
+
 func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -120,7 +127,7 @@ func renderError(code int) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(code))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/renderer.templ`, Line: 77, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/renderer.templ`, Line: 84, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -133,7 +140,7 @@ func renderError(code int) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(http.StatusText(code))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/renderer.templ`, Line: 78, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/renderer.templ`, Line: 85, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

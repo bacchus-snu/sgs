@@ -20,6 +20,7 @@ func init() {
 
 type User struct {
 	Username string   `json:"username"`
+	Email    string   `json:"email"`
 	Groups   []string `json:"groups"`
 }
 
@@ -42,7 +43,7 @@ func (c *Config) Bind() {
 	viper.BindEnv("auth.scopes", "SGS_AUTH_SCOPES")
 	viper.BindEnv("auth.redirect_url", "SGS_AUTH_REDIRECT_URL")
 
-	viper.SetDefault("auth.scopes", []string{"openid", "profile", "groups"})
+	viper.SetDefault("auth.scopes", []string{"openid", "profile", "email"})
 }
 
 func (c *Config) Validate() error {
@@ -147,6 +148,19 @@ func (svc *service) Exchange(ctx context.Context, code, state string, verifier a
 	if err := idToken.Claims(&user); err != nil {
 		return nil, err
 	}
+
+	// Fetch additional claims from userinfo endpoint (email is not in ID token)
+	userInfo, err := svc.provider.UserInfo(ctx, oauth2.StaticTokenSource(token))
+	if err != nil {
+		return nil, err
+	}
+	var extraClaims struct {
+		Email string `json:"email"`
+	}
+	if err := userInfo.Claims(&extraClaims); err != nil {
+		return nil, err
+	}
+	user.Email = extraClaims.Email
 
 	// sanity check, ensure users are valid
 	if user.Username == "" {

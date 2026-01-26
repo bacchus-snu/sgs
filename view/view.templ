@@ -17,15 +17,27 @@ templ page(title string) {
 							SNUCSE GPU Service
 						</a>
 					</h1>
-					<a class={ classButtonBase, "text-lg", "ml-auto", "hover:text-gray-500" } href="https://sgs-docs.snucse.org">
-						Docs
-					</a>
-					<a class={ classButtonBase, "text-lg", "ml-4", "hover:text-gray-500" } href="/auth/logout">
-						Log out
-					</a>
-					<a class={ classButtonPrimary, "ml-4" } href="/request">
-						Workspace request
-					</a>
+					if user := ctxUserOrNil(ctx); user != nil {
+						<a class={ classButtonPrimary, "ml-auto" } href="https://sgs-docs.snucse.org">
+							Docs
+						</a>
+						<a class={ classButtonPrimary, "ml-2" } href="/request">
+							Workspace request
+						</a>
+						<div class="ml-4 flex items-center gap-2 rounded-full bg-white/60 px-4 py-1.5 shadow-sm border border-blue-300">
+							<span class="font-semibold text-gray-800">{ user.Username }</span>
+							if user.Email != "" {
+								<span class="text-gray-600">({ user.Email })</span>
+							}
+						</div>
+						<a class="ml-2 flex items-center gap-2 rounded-full bg-white/60 px-4 py-1.5 shadow-sm border border-blue-300 hover:bg-white/80" href="/auth/logout">
+							<span class="font-semibold text-gray-800">Log out</span>
+						</a>
+					} else {
+						<a class={ classButtonPrimary, "ml-auto" } href="https://sgs-docs.snucse.org">
+							Docs
+						</a>
+					}
 				</nav>
 			</header>
 			<main class="container mx-auto p-4">

@@ -20,6 +20,7 @@ func handleListWorkspaces(
 		user := c.Get("user").(*auth.User)
 
 		var wss []*model.Workspace
+		var invitations []*model.Workspace
 		var err error
 		if user.IsAdmin() {
 			wss, err = wsSvc.ListAllWorkspaces(c.Request().Context())
@@ -30,7 +31,15 @@ func handleListWorkspaces(
 			return err
 		}
 
-		return c.Render(http.StatusOK, "", view.PageWorkspaceList(wss))
+		// Fetch pending invitations for non-admin users
+		if !user.IsAdmin() {
+			invitations, err = wsSvc.ListUserInvitations(c.Request().Context(), user.Username)
+			if err != nil {
+				return err
+			}
+		}
+
+		return c.Render(http.StatusOK, "", view.PageWorkspaceList(wss, invitations))
 	}
 }
 
@@ -110,7 +119,7 @@ func handleRequestWorkspace(
 				model.ResMemoryRequest:    req.QuotaMemoryRequest,
 				model.ResMemoryLimit:      req.QuotaMemoryLimit,
 			},
-			Users: []string{user.Username},
+			Users: []model.WorkspaceUser{{Username: user.Username, Email: user.Email}},
 		}
 
 		if !ws.Valid() {
@@ -121,7 +130,7 @@ func handleRequestWorkspace(
 			return err
 		}
 
-		newWS, err := wsSvc.CreateWorkspace(c.Request().Context(), &ws)
+		newWS, err := wsSvc.CreateWorkspace(c.Request().Context(), &ws, user.Email)
 		if err != nil {
 			return err
 		}
@@ -192,7 +201,10 @@ func handleUpdateWorkspace(
 			if !strings.HasPrefix(k, "user-") {
 				continue
 			}
-			upd.Users = append(upd.Users, v[0])
+			username := strings.TrimSpace(v[0])
+			if username != "" {
+				upd.Users = append(upd.Users, username)
+			}
 		}
 
 		if !upd.Valid() {
@@ -227,5 +239,43 @@ func handleUpdateWorkspace(
 		// refreshing the browser potentially dangerous. Instead, redirect with See
 		// Other.
 		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-details", ws.ID.Hash()))
+	}
+}
+
+func handleAcceptInvitation(
+	wsSvc model.WorkspaceService,
+) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		id, err := model.ParseID(c.Param("id"))
+		if err != nil {
+			return echo.ErrNotFound
+		}
+		user := c.Get("user").(*auth.User)
+
+		err = wsSvc.AcceptInvitation(c.Request().Context(), id, user.Username, user.Email)
+		if err != nil {
+			return err
+		}
+
+		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
+	}
+}
+
+func handleDeclineInvitation(
+	wsSvc model.WorkspaceService,
+) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		id, err := model.ParseID(c.Param("id"))
+		if err != nil {
+			return echo.ErrNotFound
+		}
+		user := c.Get("user").(*auth.User)
+
+		err = wsSvc.DeclineInvitation(c.Request().Context(), id, user.Username)
+		if err != nil {
+			return err
+		}
+
+		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
 	}
 }

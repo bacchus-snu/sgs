@@ -122,6 +122,8 @@ func AddRoutes(
 	e.GET("/", handleListWorkspaces(wsSvc), requireAuth).Name = "workspace-list"
 	e.GET("/ws/:id", handleWorkspaceDetails(wsSvc), requireAuth).Name = "workspace-details"
 	e.POST("/ws/:id", handleUpdateWorkspace(queue, wsSvc), requireAuth)
+	e.POST("/ws/:id/accept", handleAcceptInvitation(wsSvc), requireAuth).Name = "workspace-accept"
+	e.POST("/ws/:id/decline", handleDeclineInvitation(wsSvc), requireAuth).Name = "workspace-decline"
 
 	e.GET("/request", handleRequestWorkspaceForm(), requireAuth)
 	e.POST("/request", handleRequestWorkspace(wsSvc), requireAuth)

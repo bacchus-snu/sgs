@@ -18,10 +18,44 @@ var (
 		[]string{"text-blue-600", "outline-blue-600", "hover:bg-blue-200", "focus:bg-blue-200"}...)
 	classButtonDestructive = append(classButtonBase,
 		[]string{"text-red-600", "outline-red-600", "hover:bg-red-200", "focus:bg-red-200"}...)
+	classButtonGreen = append(classButtonBase,
+		[]string{"bg-green-500", "text-white", "outline-green-500", "hover:bg-green-700", "focus:bg-green-700"}...)
 )
 
-templ PageWorkspaceList(wss []*model.Workspace) {
+templ PageWorkspaceList(wss []*model.Workspace, invitations []*model.Workspace) {
 	@page("Workspaces") {
+		if len(invitations) > 0 {
+			<section class="mb-8">
+				<h2 class="mb-4 text-xl font-bold">My Invitations</h2>
+				<ul class="mx-auto max-w-screen-md space-y-4">
+					for _, ws := range invitations {
+						<li class="rounded p-4 border-2 border-blue-300 bg-blue-50">
+							<div class="flex items-center justify-between">
+								<div class="flex items-baseline">
+									<h1 class="text-lg font-mono font-bold">{ ws.ID.Hash() }</h1>
+									<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
+									@wsStatusButton(ws)
+								</div>
+								<div class="flex gap-2">
+									<form method="post" action={ templ.URL(fmt.Sprintf("/ws/%s/accept", ws.ID.Hash())) }>
+										<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+										<button class={ classButtonPrimary } type="submit">Accept</button>
+									</form>
+									<form method="post" action={ templ.URL(fmt.Sprintf("/ws/%s/decline", ws.ID.Hash())) }>
+										<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+										<button class={ classButtonDestructive } type="submit">Decline</button>
+									</form>
+								</div>
+							</div>
+							<div class="mt-2">
+								<span class="text-gray-500">Users: { strings.Join(model.Usernames(ws.Users), ", ") }</span>
+								<span class="text-gray-500 ml-4">GPU quota: { fmt.Sprint(ws.Quotas[model.ResGPURequest]) }</span>
+							</div>
+						</li>
+					}
+				</ul>
+			</section>
+		}
 		<h1 class="mb-4 text-xl font-bold">My workspaces</h1>
 		<ul class="mx-auto max-w-screen-md space-y-4">
 			for _, ws := range wss {
@@ -33,7 +67,7 @@ templ PageWorkspaceList(wss []*model.Workspace) {
 							@wsStatusButton(ws)
 						</div>
 						<div>
-							<span class="text-gray-500">Users: { strings.Join(ws.Users, ", ") }</span>
+							<span class="text-gray-500">Users: { strings.Join(model.Usernames(ws.Users), ", ") }</span>
 							<span class="text-gray-500">GPU quota: { fmt.Sprint(ws.Quotas[model.ResGPURequest]) }</span>
 						</div>
 					</li>
@@ -54,7 +88,19 @@ func wsUpdated(ws *model.Workspace) *model.Workspace {
 	newWS.Nodegroup = ws.Request.Nodegroup
 	newWS.Userdata = ws.Request.Userdata
 	newWS.Quotas = ws.Request.Quotas
-	newWS.Users = ws.Request.Users
+
+	// Convert []string to []WorkspaceUser, preserving email from existing users
+	existingUsers := make(map[string]string) // username -> email
+	for _, u := range ws.Users {
+		existingUsers[u.Username] = u.Email
+	}
+	newWS.Users = make([]model.WorkspaceUser, len(ws.Request.Users))
+	for i, username := range ws.Request.Users {
+		newWS.Users[i] = model.WorkspaceUser{
+			Username: username,
+			Email:    existingUsers[username], // will be empty for new users
+		}
+	}
 	return &newWS
 }
 
@@ -208,24 +254,37 @@ templ workspaceDetails(ws, newWS *model.Workspace) {
 			<label class={ classLabel }>Users</label>
 			<div class="space-y-1">
 				for _, user := range ws.Users {
-					<input class={ "w-full", "h-fit", classDisabled } value={ user } disabled/>
+					<div class="flex items-center gap-2 p-1">
+						if user.IsAccepted() {
+							<div class="h-2.5 w-2.5 rounded-full bg-green-500" title="Accepted"></div>
+						} else {
+							<div class="h-2.5 w-2.5 rounded-full bg-red-500" title="Pending invitation"></div>
+						}
+						<span class={ classDisabled }>{ user.Username }</span>
+						if user.Email != "" {
+							<span class="text-gray-500 text-sm">({ user.Email })</span>
+						}
+					</div>
 				}
 			</div>
 			<div class="flex flex-col space-y-1">
 				for i, user := range newWS.Users {
-					<div class="flex gap-x-2">
-						<input class="h-fit flex-1" id={ fmt.Sprintf("user-%d", i) } name={ fmt.Sprintf("user-%d", i) } value={ user } required/>
-						<button class={ classButtonDestructive } type="button" onclick={ wsRemoveUser() }>X</button>
+					<div class="flex items-center gap-x-2">
+						<input class="h-fit flex-1" id={ fmt.Sprintf("user-%d", i) } name={ fmt.Sprintf("user-%d", i) } value={ user.Username } required/>
+						<button class={ classButtonDestructive, "w-20" } type="button" onclick={ wsRemoveUser() }>Delete</button>
 					</div>
 				}
-				<button class={ classButtonSecondary } type="button" onclick={ wsAddUser() }>Add user</button>
+				<div id="add-user-row" class="flex items-center gap-x-2">
+					<input class="h-fit flex-1" id={ fmt.Sprintf("user-%d", len(newWS.Users)) } name={ fmt.Sprintf("user-%d", len(newWS.Users)) } placeholder="Add new user..."/>
+					<button class={ classButtonSecondary, "w-20" } type="button" onclick={ wsAddNewUser() }>Add</button>
+				</div>
 			</div>
 		</div>
 		<input type="hidden" id="quota-cpu-requests" name="quota-cpu-requests" value={ fmt.Sprint(newWS.Quotas[model.ResCPURequest]) }/>
 		<input type="hidden" id="quota-memory-requests" name="quota-memory-requests" value={ fmt.Sprint(newWS.Quotas[model.ResMemoryRequest]) }/>
 		<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
 		<div class="m-4 flex flex-wrap justify-center gap-4">
-			if slices.Contains(ws.Users, ctxUser(ctx).Username) {
+			if slices.Contains(model.Usernames(ws.Users), ctxUser(ctx).Username) {
 				// The user may be an admin & not in the user list in which case they're not allowed to request changes.
 				// They can outright update or delete the workspace instead.
 				<button class={ classButtonPrimary } name="action" value="request">
@@ -256,21 +315,57 @@ templ wsQuotaInput(label, name, units string, res model.Resource, ws, newWS *mod
 }
 
 script wsRemoveUser() {
-	if (event.target.parentNode.parentNode.childElementCount > 3) {
+	const container = event.target.parentNode.parentNode
+	// Keep at least the add-user-row + 1 existing user
+	if (container.childElementCount > 2) {
 		event.target.parentNode.remove()
-	} else {
-		event.target.parentNode.children[0].value = ""
 	}
 }
 
-script wsAddUser() {
-	const prev = event.target.previousElementSibling.previousElementSibling
-	const cloned = prev.cloneNode(true)
-	const nextId = Number.parseInt(cloned.children[0].id.split("-")[1]) + 1
-	cloned.children[0].id = `user-${nextId}`
-	cloned.children[0].name = `user-${nextId}`
-	cloned.children[0].value = ""
-	prev.insertAdjacentElement('afterend', cloned)
+script wsAddNewUser() {
+	const addRow = document.getElementById('add-user-row')
+	const input = addRow.children[0]  // Input is first child (no indicator)
+	const username = input.value.trim()
+
+	if (!username) {
+		input.focus()
+		return
+	}
+
+	// Create new user row with Delete button (no indicator)
+	const newRow = document.createElement('div')
+	newRow.className = 'flex items-center gap-x-2'
+
+	// Input with current value
+	const newInput = document.createElement('input')
+	newInput.className = 'h-fit flex-1'
+	const nextId = Number.parseInt(input.id.split('-')[1])
+	newInput.id = `user-${nextId}`
+	newInput.name = `user-${nextId}`
+	newInput.value = username
+	newInput.required = true
+	newRow.appendChild(newInput)
+
+	// Delete button with fixed width
+	const deleteBtn = document.createElement('button')
+	deleteBtn.className = 'rounded px-4 py-2 font-bold outline outline-1 text-red-600 outline-red-600 hover:bg-red-200 focus:bg-red-200 w-20'
+	deleteBtn.type = 'button'
+	deleteBtn.textContent = 'Delete'
+	deleteBtn.onclick = function() {
+		const container = this.parentNode.parentNode
+		if (container.childElementCount > 2) {
+			this.parentNode.remove()
+		}
+	}
+	newRow.appendChild(deleteBtn)
+
+	// Insert before add-user-row
+	addRow.parentNode.insertBefore(newRow, addRow)
+
+	// Update add-user-row input id and clear it
+	input.id = `user-${nextId + 1}`
+	input.name = `user-${nextId + 1}`
+	input.value = ''
 }
 
 script wsUpdateDefaults() {

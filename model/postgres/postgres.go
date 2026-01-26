@@ -98,7 +98,7 @@ type workspacesRepository struct {
 	pool *pgxpool.Pool
 }
 
-func (svc *workspacesRepository) CreateWorkspace(ctx context.Context, ws *model.Workspace) (*model.Workspace, error) {
+func (svc *workspacesRepository) CreateWorkspace(ctx context.Context, ws *model.Workspace, creatorEmail string) (*model.Workspace, error) {
 	if !ws.Valid() {
 		return nil, model.ErrInvalid
 	}
@@ -115,9 +115,14 @@ func (svc *workspacesRepository) CreateWorkspace(ctx context.Context, ws *model.
 			return err
 		}
 
-		for _, user := range ws.Users {
-			_, err = tx.Exec(ctx, `INSERT INTO workspaces_users (workspace_id, username) VALUES ($1, $2)`,
-				id, user)
+		for i, user := range ws.Users {
+			// First user (creator) gets their email, others are pending invitations
+			var email *string
+			if i == 0 {
+				email = &creatorEmail
+			}
+			_, err = tx.Exec(ctx, `INSERT INTO workspaces_users (workspace_id, username, email) VALUES ($1, $2, $3)`,
+				id, user.Username, email)
 			if err != nil {
 				return err
 			}
@@ -186,7 +191,8 @@ func (svc *workspacesRepository) ListAllWorkspaces(ctx context.Context) ([]*mode
 func (svc *workspacesRepository) ListUserWorkspaces(ctx context.Context, user string) ([]*model.Workspace, error) {
 	var wss []*model.Workspace
 	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `SELECT workspace_id FROM workspaces_users WHERE username = $1 ORDER BY workspace_id DESC`,
+		// Only show workspaces where the user has accepted (email IS NOT NULL)
+		rows, err := tx.Query(ctx, `SELECT workspace_id FROM workspaces_users WHERE username = $1 AND email IS NOT NULL ORDER BY workspace_id DESC`,
 			user)
 		if err != nil {
 			return err
@@ -400,6 +406,79 @@ func (svc *workspacesRepository) RequestUpdateWorkspace(ctx context.Context, upd
 func (svc *workspacesRepository) DeleteWorkspace(ctx context.Context, id model.ID) error {
 	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `DELETE FROM workspaces WHERE id = $1`, id)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return model.ErrNotFound
+		}
+		return nil
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.ErrNotFound
+	}
+	return err
+}
+
+func (svc *workspacesRepository) ListUserInvitations(ctx context.Context, user string) ([]*model.Workspace, error) {
+	var wss []*model.Workspace
+	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
+		// Only show workspaces where the user has pending invitation (email IS NULL)
+		rows, err := tx.Query(ctx, `SELECT workspace_id FROM workspaces_users WHERE username = $1 AND email IS NULL ORDER BY workspace_id DESC`,
+			user)
+		if err != nil {
+			return err
+		}
+		ids, err := pgx.CollectRows(rows, pgx.RowTo[model.ID])
+		if err != nil {
+			return err
+		}
+
+		if len(ids) == 0 {
+			wss = []*model.Workspace{}
+			return nil
+		}
+
+		wss, err = queryWorkspaces(ctx, tx, ids)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []*model.Workspace{}, nil
+		}
+		return nil, err
+	}
+
+	return wss, nil
+}
+
+func (svc *workspacesRepository) AcceptInvitation(ctx context.Context, workspaceID model.ID, username, email string) error {
+	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
+		tag, err := tx.Exec(ctx, `UPDATE workspaces_users SET email = $3 WHERE workspace_id = $1 AND username = $2 AND email IS NULL`,
+			workspaceID, username, email)
+		if err != nil {
+			return err
+		}
+		if tag.RowsAffected() == 0 {
+			return model.ErrNotFound
+		}
+		return nil
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.ErrNotFound
+	}
+	return err
+}
+
+func (svc *workspacesRepository) DeclineInvitation(ctx context.Context, workspaceID model.ID, username string) error {
+	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
+		// Only allow declining if user hasn't accepted yet (email IS NULL)
+		tag, err := tx.Exec(ctx, `DELETE FROM workspaces_users WHERE workspace_id = $1 AND username = $2 AND email IS NULL`,
+			workspaceID, username)
 		if err != nil {
 			return err
 		}

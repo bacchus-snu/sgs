@@ -112,6 +112,9 @@ func handleAuthLogout() echo.HandlerFunc {
 		delete(sess.Values, "user")
 		sess.Save(c.Request(), c.Response())
 
+		// Clear user from context so header doesn't show logged in state
+		c.Set("user", nil)
+
 		return c.Render(http.StatusOK, "", view.PageLogout())
 	}
 }
