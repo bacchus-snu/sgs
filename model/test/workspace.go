@@ -237,8 +237,10 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			wsAll.Request = wsAll.InitialRequest()
 
 			testWorkspaceListAll(t, wsSvc, []*model.Workspace{&ws1, &ws2, &wsAll})
+			// user1 sees ws1 (accepted) and wsAll (accepted as creator)
 			testWorkspaceListUser(t, wsSvc, "user1", []*model.Workspace{&ws1, &wsAll})
-			testWorkspaceListUser(t, wsSvc, "user2", []*model.Workspace{&ws2, &wsAll})
+			// user2 only sees ws2 (accepted) - not wsAll where they're pending
+			testWorkspaceListUser(t, wsSvc, "user2", []*model.Workspace{&ws2})
 			testWorkspaceListUser(t, wsSvc, "user3", nil)
 
 			testWorkspaceGet(t, wsSvc, ws1.ID, &ws1)
@@ -248,7 +250,8 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			testWorkspaceGetUser(t, wsSvc, ws1.ID, "user2", nil)
 			testWorkspaceGetUser(t, wsSvc, ws2.ID, "user1", nil)
 			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user1", &wsAll)
-			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user2", &wsAll)
+			// user2 cannot access wsAll - they're pending there
+			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user2", nil)
 			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user3", nil)
 
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{

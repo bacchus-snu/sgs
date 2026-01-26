@@ -19,6 +19,16 @@ func containsUser(users []model.WorkspaceUser, username string) bool {
 	return false
 }
 
+// userHasAccepted checks if a user exists and has accepted (has email)
+func userHasAccepted(users []model.WorkspaceUser, username string) bool {
+	for _, u := range users {
+		if u.Username == username && u.Email != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func sortUsers(users []model.WorkspaceUser) {
 	slices.SortFunc(users, func(a, b model.WorkspaceUser) int {
 		return cmp.Compare(a.Username, b.Username)
@@ -119,7 +129,8 @@ func (svc *mockWorkspaces) ListUserWorkspaces(ctx context.Context, user string) 
 
 	var wss []*model.Workspace
 	for _, ws := range svc.data {
-		if containsUser(ws.Users, user) {
+		// Only return workspaces where user has accepted (has email)
+		if userHasAccepted(ws.Users, user) {
 			wss = append(wss, cloneWorkspace(ws))
 		}
 	}
@@ -180,7 +191,8 @@ func (svc *mockWorkspaces) GetUserWorkspace(ctx context.Context, id model.ID, us
 	if !ok {
 		return nil, model.ErrNotFound
 	}
-	if !containsUser(ws.Users, user) {
+	// Only allow access if user has accepted (has email)
+	if !userHasAccepted(ws.Users, user) {
 		return nil, model.ErrNotFound
 	}
 
