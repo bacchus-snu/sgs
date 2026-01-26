@@ -270,7 +270,8 @@ func (svc *workspacesRepository) GetUserWorkspace(ctx context.Context, id model.
 	err := pgx.BeginFunc(ctx, svc.pool, func(tx pgx.Tx) error {
 		var err error
 
-		rows, err := tx.Query(ctx, `SELECT workspace_id FROM workspaces_users WHERE workspace_id = $1 AND username = $2`,
+		// Only return workspace if user has accepted (email IS NOT NULL)
+		rows, err := tx.Query(ctx, `SELECT workspace_id FROM workspaces_users WHERE workspace_id = $1 AND username = $2 AND email IS NOT NULL`,
 			id, user)
 		if err != nil {
 			return err
