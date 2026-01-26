@@ -24,7 +24,10 @@ const (
 )
 
 func ctxCSRF(ctx context.Context) string {
-	return ctx.Value(ctxKeyCSRF).(string)
+	if v := ctx.Value(ctxKeyCSRF); v != nil {
+		return v.(string)
+	}
+	return ""
 }
 
 func ctxUser(ctx context.Context) *auth.User {

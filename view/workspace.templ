@@ -1,7 +1,6 @@
 package view
 
 import (
-	"encoding/base64"
 	"fmt"
 	"github.com/bacchus-snu/sgs/model"
 	"slices"
@@ -59,9 +58,9 @@ func wsUpdated(ws *model.Workspace) *model.Workspace {
 	return &newWS
 }
 
-templ PageWorkspaceDetails(ws *model.Workspace, kubeconfig string) {
+templ PageWorkspaceDetails(ws *model.Workspace) {
 	@page("Workspace Details") {
-		@workspaceDetails(ws, wsUpdated(ws), kubeconfig)
+		@workspaceDetails(ws, wsUpdated(ws))
 	}
 }
 
@@ -89,7 +88,7 @@ templ wsStatusButton(ws *model.Workspace) {
 	}
 }
 
-templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
+templ workspaceDetails(ws, newWS *model.Workspace) {
 	<div class='flex items-baseline'>
 		<h1 class="text-lg font-bold font-mono">{ ws.ID.Hash() }</h1>
 		<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
@@ -98,7 +97,7 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 	if ws.Request != nil {
 		<div><span class="text-gray-500">Changes requested by</span> { ws.Request.ByUser }</div>
 	}
-	<form class="mt-4" method="post">
+	<form class="mt-4" method="post" onsubmit={ wsValidateForm() }>
 		<div class="grid grid-cols-3 gap-4">
 			<span class="font-bold text-center col-start-2">Current</span>
 			<span class="font-bold text-center">Changes</span>
@@ -120,12 +119,92 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 			<label class={ classLabel }>Reason</label>
 			<textarea class={ "resize-none", classDisabled } rows="10" disabled>{ ws.Userdata }</textarea>
 			<textarea class="resize-none" id="userdata" name="userdata" rows="10" required>{ newWS.Userdata }</textarea>
-			@wsQuotaInput("GPUs", "quota-gpu", "", model.ResGPURequest, ws, newWS)
+			// GPUs with oninput handler
+			<label class={ classLabel }>
+				GPUs
+			</label>
+			<input class={ "h-fit", classDisabled } value={ fmt.Sprint(ws.Quotas[model.ResGPURequest]) } disabled/>
+			<input class="h-fit" id="quota-gpu" name="quota-gpu" type="number" min="0" value={ fmt.Sprint(newWS.Quotas[model.ResGPURequest]) } required oninput={ wsUpdateDefaults() }/>
+			<div class="col-start-1"></div>
+			<p class="col-start-3 text-sm text-gray-500">
+				Number of GPU compute units that can run simultaneously.
+			</p>
+			// GPU Memory with oninput handler
+			<label class={ classLabel }>
+				GPU Memory (per GPU)
+				<span class="text-sm font-normal text-gray-500">GiB</span>
+			</label>
+			<input class={ "h-fit", classDisabled } value={ fmt.Sprint(ws.Quotas[model.ResGPUMemoryRequest]) } disabled/>
+			<input class="h-fit" id="quota-gpu-memory" name="quota-gpu-memory" type="number" min="0" step="any" value={ fmt.Sprint(newWS.Quotas[model.ResGPUMemoryRequest]) } required oninput={ wsUpdateDefaults() }/>
 			@wsQuotaInput("Storage", "quota-storage", "GiB", model.ResStorageRequest, ws, newWS)
-			@wsQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU", model.ResCPURequest, ws, newWS)
-			@wsQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU", model.ResCPULimit, ws, newWS)
-			@wsQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB", model.ResMemoryRequest, ws, newWS)
-			@wsQuotaInput("Memory Limit", "quota-memory-limits", "GiB", model.ResMemoryLimit, ws, newWS)
+			// Explanation text
+			<div class="col-start-1"></div>
+			<p class="col-start-3 text-sm text-gray-500">
+				By default, <span class="font-bold">8 CPUs per GPU</span> and
+				<span class="font-bold">1.5× total GPU memory as host memory</span> are allocated as limits.
+				You may increase these values if needed, but please explain why in the Reason field above.
+			</p>
+			// CPU Limit with guarantee checkbox in both columns
+			<label class={ classLabel }>
+				CPUs
+			</label>
+			<div class="flex items-center gap-2">
+				<input class={ "h-fit", "flex-1", classDisabled } value={ fmt.Sprint(ws.Quotas[model.ResCPULimit]) } disabled/>
+				<input type="checkbox" checked?={ ws.Quotas[model.ResCPURequest] > 0 } disabled/>
+				<span class="text-sm text-gray-500">Guarantee</span>
+			</div>
+			<div class="flex items-center gap-2">
+				<input class="h-fit flex-1" id="quota-cpu-limits" name="quota-cpu-limits" type="number" min="0" value={ fmt.Sprint(newWS.Quotas[model.ResCPULimit]) } required oninput={ wsValidateLimits() }/>
+				<input type="checkbox" id="guarantee-cpu" name="guarantee-cpu" checked?={ newWS.Quotas[model.ResCPURequest] > 0 } onchange={ wsToggleGuaranteeCPU() }/>
+				<label for="guarantee-cpu" class="text-sm whitespace-nowrap">Guarantee</label>
+			</div>
+			<p id="cpu-error" class="hidden col-start-3 text-sm text-red-600 font-bold"></p>
+			if newWS.Quotas[model.ResCPURequest] > 0 {
+				<div id="cpu-warning-spacer" class="col-start-1"></div>
+				<p id="cpu-warning" class="col-start-3 text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
+				</p>
+			} else {
+				<div id="cpu-warning-spacer" class="hidden col-start-1"></div>
+				<p id="cpu-warning" class="hidden col-start-3 text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
+				</p>
+			}
+			// Memory Limit with guarantee checkbox in both columns
+			<label class={ classLabel }>
+				Host Memory
+				<span class="text-sm font-normal text-gray-500">GiB</span>
+			</label>
+			<div class="flex items-center gap-2">
+				<input class={ "h-fit", "flex-1", classDisabled } value={ fmt.Sprint(ws.Quotas[model.ResMemoryLimit]) } disabled/>
+				<input type="checkbox" checked?={ ws.Quotas[model.ResMemoryRequest] > 0 } disabled/>
+				<span class="text-sm text-gray-500">Guarantee</span>
+			</div>
+			<div class="flex items-center gap-2">
+				<input class="h-fit flex-1" id="quota-memory-limits" name="quota-memory-limits" type="number" min="0" step="any" value={ fmt.Sprint(newWS.Quotas[model.ResMemoryLimit]) } required oninput={ wsValidateLimits() }/>
+				<input type="checkbox" id="guarantee-memory" name="guarantee-memory" checked?={ newWS.Quotas[model.ResMemoryRequest] > 0 } onchange={ wsToggleGuaranteeMemory() }/>
+				<label for="guarantee-memory" class="text-sm whitespace-nowrap">Guarantee</label>
+			</div>
+			<p id="memory-error" class="hidden col-start-3 text-sm text-red-600 font-bold"></p>
+			if newWS.Quotas[model.ResMemoryRequest] > 0 {
+				<div id="memory-warning-spacer" class="col-start-1"></div>
+				<p id="memory-warning" class="col-start-3 text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
+				</p>
+			} else {
+				<div id="memory-warning-spacer" class="hidden col-start-1"></div>
+				<p id="memory-warning" class="hidden col-start-3 text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
+				</p>
+			}
 			<label class={ classLabel }>Users</label>
 			<div class="space-y-1">
 				for _, user := range ws.Users {
@@ -142,6 +221,8 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 				<button class={ classButtonSecondary } type="button" onclick={ wsAddUser() }>Add user</button>
 			</div>
 		</div>
+		<input type="hidden" id="quota-cpu-requests" name="quota-cpu-requests" value={ fmt.Sprint(newWS.Quotas[model.ResCPURequest]) }/>
+		<input type="hidden" id="quota-memory-requests" name="quota-memory-requests" value={ fmt.Sprint(newWS.Quotas[model.ResMemoryRequest]) }/>
 		<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
 		<div class="m-4 flex flex-wrap justify-center gap-4">
 			if slices.Contains(ws.Users, ctxUser(ctx).Username) {
@@ -161,15 +242,6 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 			}
 		</div>
 	</form>
-	<section>
-		<h1 class="inline text-lg font-mono font-bold">Kubeconfig</h1>
-		<textarea class={ "font-mono", "text-nowrap", "w-full", "resize-none", "mb-4", classDisabled } rows="10" readonly>{ kubeconfig }</textarea>
-		<a
-			class={ classButtonPrimary }
-			href={ templ.SafeURL("data:text/plain;base64," + base64.StdEncoding.EncodeToString([]byte(kubeconfig))) }
-			download="kubeconfig"
-		>Download</a>
-	</section>
 }
 
 templ wsQuotaInput(label, name, units string, res model.Resource, ws, newWS *model.Workspace) {
@@ -180,7 +252,7 @@ templ wsQuotaInput(label, name, units string, res model.Resource, ws, newWS *mod
 		}
 	</label>
 	<input class={ "h-fit", classDisabled } value={ fmt.Sprint(ws.Quotas[res]) } disabled/>
-	<input class="h-fit" id={ name } name={ name } type="number" min="0" value={ fmt.Sprint(newWS.Quotas[res]) } required/>
+	<input class="h-fit" id={ name } name={ name } type="number" min="0" step="any" value={ fmt.Sprint(newWS.Quotas[res]) } required/>
 }
 
 script wsRemoveUser() {
@@ -199,4 +271,132 @@ script wsAddUser() {
 	cloned.children[0].name = `user-${nextId}`
 	cloned.children[0].value = ""
 	prev.insertAdjacentElement('afterend', cloned)
+}
+
+script wsUpdateDefaults() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuInput = document.getElementById('quota-cpu-limits');
+	const memInput = document.getElementById('quota-memory-limits');
+
+	// Update minimum attributes (use raw floating point for validation)
+	cpuInput.min = minCpu;
+	memInput.min = minMemGiB;
+
+	// Always update to calculated defaults when GPU values change
+	cpuInput.value = minCpu;
+	memInput.value = minMemGiB;
+
+	// Clear any validation errors since we just set valid values
+	const cpuError = document.getElementById('cpu-error');
+	const memError = document.getElementById('memory-error');
+	cpuInput.classList.remove('border-red-500', 'border-2');
+	cpuError.classList.add('hidden');
+	memInput.classList.remove('border-red-500', 'border-2');
+	memError.classList.add('hidden');
+}
+
+script wsValidateLimits() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuInput = document.getElementById('quota-cpu-limits');
+	const memInput = document.getElementById('quota-memory-limits');
+	const cpuError = document.getElementById('cpu-error');
+	const memError = document.getElementById('memory-error');
+
+	const cpuValue = parseInt(cpuInput.value) || 0;
+	const memValue = parseFloat(memInput.value) || 0;
+
+	// CPU validation
+	if (cpuValue < minCpu) {
+		cpuInput.classList.add('border-red-500', 'border-2');
+		cpuError.textContent = `CPUs must be at least ${minCpu} (8 × ${gpuCount} GPUs)`;
+		cpuError.classList.remove('hidden');
+	} else {
+		cpuInput.classList.remove('border-red-500', 'border-2');
+		cpuError.classList.add('hidden');
+	}
+
+	// Memory validation
+	if (memValue < minMemGiB) {
+		memInput.classList.add('border-red-500', 'border-2');
+		memError.textContent = `Host Memory must be at least ${minMemGiB} GiB (1.5 × ${gpuCount} GPUs × ${gpuMemGiB} GiB)`;
+		memError.classList.remove('hidden');
+	} else {
+		memInput.classList.remove('border-red-500', 'border-2');
+		memError.classList.add('hidden');
+	}
+}
+
+script wsToggleGuaranteeCPU() {
+	const checkbox = document.getElementById('guarantee-cpu');
+	const warningSpacer = document.getElementById('cpu-warning-spacer');
+	const warning = document.getElementById('cpu-warning');
+	const limitInput = document.getElementById('quota-cpu-limits');
+	const requestInput = document.getElementById('quota-cpu-requests');
+
+	if (checkbox.checked) {
+		warningSpacer.classList.remove('hidden');
+		warning.classList.remove('hidden');
+		requestInput.value = limitInput.value;
+	} else {
+		warningSpacer.classList.add('hidden');
+		warning.classList.add('hidden');
+		requestInput.value = '0';
+	}
+}
+
+script wsToggleGuaranteeMemory() {
+	const checkbox = document.getElementById('guarantee-memory');
+	const warningSpacer = document.getElementById('memory-warning-spacer');
+	const warning = document.getElementById('memory-warning');
+	const limitInput = document.getElementById('quota-memory-limits');
+	const requestInput = document.getElementById('quota-memory-requests');
+
+	if (checkbox.checked) {
+		warningSpacer.classList.remove('hidden');
+		warning.classList.remove('hidden');
+		requestInput.value = limitInput.value;
+	} else {
+		warningSpacer.classList.add('hidden');
+		warning.classList.add('hidden');
+		requestInput.value = '0';
+	}
+}
+
+script wsValidateForm() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuValue = parseInt(document.getElementById('quota-cpu-limits').value) || 0;
+	const memValue = parseFloat(document.getElementById('quota-memory-limits').value) || 0;
+
+	// Round floating point values to integers before submission (backend expects uint64)
+	document.getElementById('quota-gpu-memory').value = Math.ceil(gpuMemGiB);
+	document.getElementById('quota-storage').value = Math.ceil(parseFloat(document.getElementById('quota-storage').value) || 0);
+	document.getElementById('quota-memory-limits').value = Math.ceil(memValue);
+
+	// Update request values based on guarantee checkboxes before submit
+	const cpuCheckbox = document.getElementById('guarantee-cpu');
+	const memCheckbox = document.getElementById('guarantee-memory');
+	document.getElementById('quota-cpu-requests').value = cpuCheckbox.checked ? cpuValue : 0;
+	document.getElementById('quota-memory-requests').value = memCheckbox.checked ? Math.ceil(memValue) : 0;
+
+	if (cpuValue < minCpu || memValue < minMemGiB) {
+		event.preventDefault();
+		wsValidateLimits();
+		return false;
+	}
+	return true;
 }

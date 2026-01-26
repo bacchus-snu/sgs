@@ -1,11 +1,9 @@
 package controller
 
 import (
-	_ "embed"
 	"net/http"
 	"slices"
 	"strings"
-	"text/template"
 
 	"github.com/labstack/echo/v4"
 
@@ -13,13 +11,6 @@ import (
 	"github.com/bacchus-snu/sgs/pkg/auth"
 	"github.com/bacchus-snu/sgs/view"
 	"github.com/bacchus-snu/sgs/worker"
-)
-
-var (
-	//go:embed kubeconfig.template
-	kubeconfigTemplate string
-
-	kubeconfig = template.Must(template.New("kubeconfig").Parse(kubeconfigTemplate))
 )
 
 func handleListWorkspaces(
@@ -63,9 +54,7 @@ func handleWorkspaceDetails(
 			return err
 		}
 
-		sb := strings.Builder{}
-		kubeconfig.Execute(&sb, ws.ID.Hash())
-		return c.Render(http.StatusOK, "", view.PageWorkspaceDetails(ws, sb.String()))
+		return c.Render(http.StatusOK, "", view.PageWorkspaceDetails(ws))
 	}
 }
 
@@ -94,6 +83,7 @@ func handleRequestWorkspace(
 		Nodegroup          string `form:"nodegroup"`
 		Userdata           string `form:"userdata"`
 		QuotaGPU           uint64 `form:"quota-gpu"`
+		QuotaGPUMemory     uint64 `form:"quota-gpu-memory"`
 		QuotaStorage       uint64 `form:"quota-storage"`
 		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
 		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
@@ -112,12 +102,13 @@ func handleRequestWorkspace(
 			Nodegroup: model.Nodegroup(req.Nodegroup),
 			Userdata:  req.Userdata,
 			Quotas: map[model.Resource]uint64{
-				model.ResGPURequest:     req.QuotaGPU,
-				model.ResStorageRequest: req.QuotaStorage,
-				model.ResCPURequest:     req.QuotaCPURequest,
-				model.ResCPULimit:       req.QuotaCPULimit,
-				model.ResMemoryRequest:  req.QuotaMemoryRequest,
-				model.ResMemoryLimit:    req.QuotaMemoryLimit,
+				model.ResGPURequest:       req.QuotaGPU,
+				model.ResGPUMemoryRequest: req.QuotaGPUMemory,
+				model.ResStorageRequest:   req.QuotaStorage,
+				model.ResCPURequest:       req.QuotaCPURequest,
+				model.ResCPULimit:         req.QuotaCPULimit,
+				model.ResMemoryRequest:    req.QuotaMemoryRequest,
+				model.ResMemoryLimit:      req.QuotaMemoryLimit,
 			},
 			Users: []string{user.Username},
 		}
@@ -147,6 +138,7 @@ func handleUpdateWorkspace(
 		Nodegroup          string `form:"nodegroup"`
 		Userdata           string `form:"userdata"`
 		QuotaGPU           uint64 `form:"quota-gpu"`
+		QuotaGPUMemory     uint64 `form:"quota-gpu-memory"`
 		QuotaStorage       uint64 `form:"quota-storage"`
 		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
 		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
@@ -186,12 +178,13 @@ func handleUpdateWorkspace(
 			Nodegroup:   model.Nodegroup(req.Nodegroup),
 			Userdata:    req.Userdata,
 			Quotas: map[model.Resource]uint64{
-				model.ResGPURequest:     req.QuotaGPU,
-				model.ResStorageRequest: req.QuotaStorage,
-				model.ResCPURequest:     req.QuotaCPURequest,
-				model.ResCPULimit:       req.QuotaCPULimit,
-				model.ResMemoryRequest:  req.QuotaMemoryRequest,
-				model.ResMemoryLimit:    req.QuotaMemoryLimit,
+				model.ResGPURequest:       req.QuotaGPU,
+				model.ResGPUMemoryRequest: req.QuotaGPUMemory,
+				model.ResStorageRequest:   req.QuotaStorage,
+				model.ResCPURequest:       req.QuotaCPURequest,
+				model.ResCPULimit:         req.QuotaCPULimit,
+				model.ResMemoryRequest:    req.QuotaMemoryRequest,
+				model.ResMemoryLimit:      req.QuotaMemoryLimit,
 			},
 		}
 		form, _ := c.FormParams()

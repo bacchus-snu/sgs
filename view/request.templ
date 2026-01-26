@@ -12,7 +12,7 @@ Huggingface상의 facebook/esm2_t33_650M_UR50D (약 3GB) 및 facebook/esm2_t36_3
 templ PageRequestForm() {
 	@page("Workspace Request Form") {
 		<h1 class="mb-4 text-xl font-bold">Workspace request form</h1>
-		<form method="post">
+		<form method="post" onsubmit={ reqValidateForm() }>
 			<div class="grid grid-cols-3 gap-4">
 				<label class={ "col-start-1", classLabel } for="nodegroup">Nodegroup</label>
 				<select id="nodegroup" name="nodegroup" required>
@@ -25,21 +25,60 @@ templ PageRequestForm() {
 				</select>
 				<label class={ "col-start-1", classLabel } for="userdata">Reason</label>
 				<textarea class="resize-none" id="userdata" name="userdata" rows="10" placeholder={ reasonPlaceholder } required></textarea>
-				@reqQuotaInput("GPUs", "quota-gpu", "")
+				<label class={ "col-start-1", classLabel } for="quota-gpu">
+					GPUs
+				</label>
+				<input class="h-fit" id="quota-gpu" name="quota-gpu" type="number" min="0" value="0" required oninput={ reqUpdateDefaults() }/>
+				<div class="col-start-1"></div>
+				<p class="text-sm text-gray-500">
+					Number of GPU compute units that can run simultaneously in your workspace.
+				</p>
+				<label class={ "col-start-1", classLabel } for="quota-gpu-memory">
+					GPU Memory (per GPU)
+					<span class="text-sm font-normal text-gray-500">GiB</span>
+				</label>
+				<input class="h-fit" id="quota-gpu-memory" name="quota-gpu-memory" type="number" min="0" step="any" value="0" required oninput={ reqUpdateDefaults() }/>
 				@reqQuotaInput("Storage", "quota-storage", "GiB")
-				<p class="col-start-2 text-sm text-gray-500">
-					If you are unsure about CPU or memory requirements,
-					<span class="font-bold">please leave them as 0</span>.
+				<div class="col-start-1"></div>
+				<p class="text-sm text-gray-500">
+					By default, <span class="font-bold">8 CPUs per GPU</span> and
+					<span class="font-bold">1.5× total GPU memory as host memory</span> are allocated as limits.
+					You may increase these values if needed, but please explain why in the Reason field above.
 				</p>
-				@reqQuotaInput("CPU Limit", "quota-cpu-limits", "vCPU")
-				@reqQuotaInput("Memory Limit", "quota-memory-limits", "GiB")
-				<p class="col-start-2 text-sm text-gray-500">
-					Do not request guaranteed resources unless you are sure you need them.
-					<span class="font-bold">Underutilization of guaranteed resources will result in workspace termination</span>.
+				<label class={ "col-start-1", classLabel } for="quota-cpu-limits">
+					CPUs
+				</label>
+				<div class="flex items-center gap-2">
+					<input class="h-fit flex-1" id="quota-cpu-limits" name="quota-cpu-limits" type="number" min="0" value="0" required oninput={ reqValidateLimits() }/>
+					<input type="checkbox" id="guarantee-cpu" name="guarantee-cpu" onchange={ reqToggleGuaranteeCPU() }/>
+					<label for="guarantee-cpu" class="text-sm whitespace-nowrap">Guarantee</label>
+				</div>
+				<p id="cpu-error" class="hidden col-start-2 text-sm text-red-600 font-bold"></p>
+				<div id="cpu-warning-spacer" class="hidden col-start-1"></div>
+				<p id="cpu-warning" class="hidden text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
 				</p>
-				@reqQuotaInput("CPU Guaranteed", "quota-cpu-requests", "vCPU")
-				@reqQuotaInput("Memory Guaranteed", "quota-memory-requests", "GiB")
+				<label class={ "col-start-1", classLabel } for="quota-memory-limits">
+					Host Memory
+					<span class="text-sm font-normal text-gray-500">GiB</span>
+				</label>
+				<div class="flex items-center gap-2">
+					<input class="h-fit flex-1" id="quota-memory-limits" name="quota-memory-limits" type="number" min="0" step="any" value="0" required oninput={ reqValidateLimits() }/>
+					<input type="checkbox" id="guarantee-memory" name="guarantee-memory" onchange={ reqToggleGuaranteeMemory() }/>
+					<label for="guarantee-memory" class="text-sm whitespace-nowrap">Guarantee</label>
+				</div>
+				<p id="memory-error" class="hidden col-start-2 text-sm text-red-600 font-bold"></p>
+				<div id="memory-warning-spacer" class="hidden col-start-1"></div>
+				<p id="memory-warning" class="hidden text-sm text-amber-600">
+					⚠️ Guaranteed resources are reserved exclusively for your workspace.
+					Only enable this for workloads requiring resource isolation (e.g., performance benchmarking).
+					This may prevent other users from creating sessions due to resource scarcity.
+				</p>
 			</div>
+			<input type="hidden" id="quota-cpu-requests" name="quota-cpu-requests" value="0"/>
+			<input type="hidden" id="quota-memory-requests" name="quota-memory-requests" value="0"/>
 			<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
 			<div class="m-4 flex flex-col items-center justify-center">
 				<button class={ classButtonPrimary } name="action" value="request">
@@ -57,5 +96,133 @@ templ reqQuotaInput(label, name, units string) {
 			<span class="text-sm font-normal text-gray-500">{ units }</span>
 		}
 	</label>
-	<input class="h-fit" id={ name } name={ name } type="number" min="0" value="0" required/>
+	<input class="h-fit" id={ name } name={ name } type="number" min="0" step="any" value="0" required/>
+}
+
+script reqUpdateDefaults() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuInput = document.getElementById('quota-cpu-limits');
+	const memInput = document.getElementById('quota-memory-limits');
+
+	// Update minimum attributes (use raw floating point for validation)
+	cpuInput.min = minCpu;
+	memInput.min = minMemGiB;
+
+	// Always update to calculated defaults when GPU values change
+	cpuInput.value = minCpu;
+	memInput.value = minMemGiB;
+
+	// Clear any validation errors since we just set valid values
+	const cpuError = document.getElementById('cpu-error');
+	const memError = document.getElementById('memory-error');
+	cpuInput.classList.remove('border-red-500', 'border-2');
+	cpuError.classList.add('hidden');
+	memInput.classList.remove('border-red-500', 'border-2');
+	memError.classList.add('hidden');
+}
+
+script reqValidateLimits() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuInput = document.getElementById('quota-cpu-limits');
+	const memInput = document.getElementById('quota-memory-limits');
+	const cpuError = document.getElementById('cpu-error');
+	const memError = document.getElementById('memory-error');
+
+	const cpuValue = parseInt(cpuInput.value) || 0;
+	const memValue = parseFloat(memInput.value) || 0;
+
+	// CPU validation
+	if (cpuValue < minCpu) {
+		cpuInput.classList.add('border-red-500', 'border-2');
+		cpuError.textContent = `CPUs must be at least ${minCpu} (8 × ${gpuCount} GPUs)`;
+		cpuError.classList.remove('hidden');
+	} else {
+		cpuInput.classList.remove('border-red-500', 'border-2');
+		cpuError.classList.add('hidden');
+	}
+
+	// Memory validation
+	if (memValue < minMemGiB) {
+		memInput.classList.add('border-red-500', 'border-2');
+		memError.textContent = `Host Memory must be at least ${minMemGiB} GiB (1.5 × ${gpuCount} GPUs × ${gpuMemGiB} GiB)`;
+		memError.classList.remove('hidden');
+	} else {
+		memInput.classList.remove('border-red-500', 'border-2');
+		memError.classList.add('hidden');
+	}
+}
+
+script reqToggleGuaranteeCPU() {
+	const checkbox = document.getElementById('guarantee-cpu');
+	const warningSpacer = document.getElementById('cpu-warning-spacer');
+	const warning = document.getElementById('cpu-warning');
+	const limitInput = document.getElementById('quota-cpu-limits');
+	const requestInput = document.getElementById('quota-cpu-requests');
+
+	if (checkbox.checked) {
+		warningSpacer.classList.remove('hidden');
+		warning.classList.remove('hidden');
+		requestInput.value = limitInput.value;
+	} else {
+		warningSpacer.classList.add('hidden');
+		warning.classList.add('hidden');
+		requestInput.value = '0';
+	}
+}
+
+script reqToggleGuaranteeMemory() {
+	const checkbox = document.getElementById('guarantee-memory');
+	const warningSpacer = document.getElementById('memory-warning-spacer');
+	const warning = document.getElementById('memory-warning');
+	const limitInput = document.getElementById('quota-memory-limits');
+	const requestInput = document.getElementById('quota-memory-requests');
+
+	if (checkbox.checked) {
+		warningSpacer.classList.remove('hidden');
+		warning.classList.remove('hidden');
+		requestInput.value = limitInput.value;
+	} else {
+		warningSpacer.classList.add('hidden');
+		warning.classList.add('hidden');
+		requestInput.value = '0';
+	}
+}
+
+script reqValidateForm() {
+	const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
+	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+
+	const minCpu = gpuCount * 8;
+	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
+
+	const cpuValue = parseInt(document.getElementById('quota-cpu-limits').value) || 0;
+	const memValue = parseFloat(document.getElementById('quota-memory-limits').value) || 0;
+
+	// Round floating point values to integers before submission (backend expects uint64)
+	document.getElementById('quota-gpu-memory').value = Math.ceil(gpuMemGiB);
+	document.getElementById('quota-storage').value = Math.ceil(parseFloat(document.getElementById('quota-storage').value) || 0);
+	document.getElementById('quota-memory-limits').value = Math.ceil(memValue);
+
+	// Update request values based on guarantee checkboxes before submit
+	const cpuCheckbox = document.getElementById('guarantee-cpu');
+	const memCheckbox = document.getElementById('guarantee-memory');
+	document.getElementById('quota-cpu-requests').value = cpuCheckbox.checked ? cpuValue : 0;
+	document.getElementById('quota-memory-requests').value = memCheckbox.checked ? Math.ceil(memValue) : 0;
+
+	if (cpuValue < minCpu || memValue < minMemGiB) {
+		event.preventDefault();
+		reqValidateLimits();
+		return false;
+	}
+	return true;
 }

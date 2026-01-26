@@ -51,6 +51,8 @@ func toVWorkspace(ws *model.Workspace) ValueWorkspace {
 		switch k {
 		case model.ResMemoryLimit, model.ResMemoryRequest, model.ResStorageRequest:
 			vws.Quotas[string(k)] = strconv.FormatUint(v, 10) + "Gi"
+		case model.ResGPUMemoryRequest:
+			vws.Quotas[string(k)] = strconv.FormatUint(v, 10) + "Gi"
 		default:
 			vws.Quotas[string(k)] = strconv.FormatUint(v, 10)
 		}

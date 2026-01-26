@@ -172,3 +172,4 @@ dist
 /tmp/
 /sgs
 /sgs-register-harbor
+/sgs-runtime-wrapper

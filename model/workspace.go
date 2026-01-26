@@ -94,25 +94,26 @@ func (ws WorkspaceUpdate) Valid() bool {
 type Resource string
 
 const (
-	ResCPURequest     Resource = "requests.cpu"
-	ResCPULimit       Resource = "limits.cpu"
-	ResMemoryRequest  Resource = "requests.memory"
-	ResMemoryLimit    Resource = "limits.memory"
-	ResStorageRequest Resource = "requests.storage"
-	ResGPURequest     Resource = "requests.nvidia.com/gpu"
+	ResCPURequest          Resource = "requests.cpu"
+	ResCPULimit            Resource = "limits.cpu"
+	ResMemoryRequest       Resource = "requests.memory"
+	ResMemoryLimit         Resource = "limits.memory"
+	ResStorageRequest      Resource = "requests.storage"
+	ResGPURequest          Resource = "requests.nvidia.com/gpu"
+	ResGPUMemoryRequest    Resource = "requests.nvidia.com/gpumem"
 )
 
 var Resources = []Resource{
 	ResCPURequest, ResCPULimit,
 	ResMemoryRequest, ResMemoryLimit,
-	ResStorageRequest, ResGPURequest,
+	ResStorageRequest, ResGPURequest, ResGPUMemoryRequest,
 }
 
 func (r Resource) Valid() bool {
 	switch r {
 	case ResCPULimit, ResCPURequest,
 		ResMemoryLimit, ResMemoryRequest,
-		ResStorageRequest, ResGPURequest:
+		ResStorageRequest, ResGPURequest, ResGPUMemoryRequest:
 		return true
 	}
 	return false

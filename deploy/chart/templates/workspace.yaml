@@ -28,6 +28,7 @@ spec:
     requests.cpu: 0
     requests.memory: 0
     requests.nvidia.com/gpu: 0
+    requests.nvidia.com/gpumem: 0
     requests.storage: 0
     {{- end }}
     requests.ephemeral-storage: 0
