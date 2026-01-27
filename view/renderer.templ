@@ -19,8 +19,9 @@ type renderer struct{}
 type ctxKey string
 
 const (
-	ctxKeyCSRF ctxKey = "csrf"
-	ctxKeyUser ctxKey = "user"
+	ctxKeyCSRF         ctxKey = "csrf"
+	ctxKeyUser         ctxKey = "user"
+	ctxKeyIsSubscribed ctxKey = "isSubscribed"
 )
 
 func ctxCSRF(ctx context.Context) string {
@@ -41,6 +42,13 @@ func ctxUserOrNil(ctx context.Context) *auth.User {
 	return nil
 }
 
+func ctxIsSubscribed(ctx context.Context) bool {
+	if v := ctx.Value(ctxKeyIsSubscribed); v != nil {
+		return v.(bool)
+	}
+	return false
+}
+
 func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -50,6 +58,9 @@ func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error 
 	}
 	if csrfToken := c.Get("csrf"); csrfToken != nil {
 		ctx = context.WithValue(ctx, ctxKeyCSRF, csrfToken)
+	}
+	if isSubscribed := c.Get("isSubscribed"); isSubscribed != nil {
+		ctx = context.WithValue(ctx, ctxKeyIsSubscribed, isSubscribed)
 	}
 
 	switch v := data.(type) {

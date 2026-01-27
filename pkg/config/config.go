@@ -9,6 +9,7 @@ import (
 	"github.com/bacchus-snu/sgs/controller"
 	"github.com/bacchus-snu/sgs/model/postgres"
 	"github.com/bacchus-snu/sgs/pkg/auth"
+	"github.com/bacchus-snu/sgs/pkg/email"
 	"github.com/bacchus-snu/sgs/worker"
 )
 
@@ -22,6 +23,7 @@ type Config struct {
 	Controller controller.Config `mapstructure:"controller"`
 	Postgres   postgres.Config   `mapstructure:"postgres"`
 	Worker     worker.Config     `mapstructure:"worker"`
+	Email      email.Config      `mapstructure:"email"`
 }
 
 var _ Validator = (*Config)(nil)
@@ -44,6 +46,7 @@ func (c *Config) Bind() {
 	c.Controller.Bind()
 	c.Postgres.Bind()
 	c.Worker.Bind()
+	c.Email.Bind()
 }
 
 func (c *Config) Validate() error {
@@ -60,6 +63,9 @@ func (c *Config) Validate() error {
 	}
 	if err1 := c.Worker.Validate(); err1 != nil {
 		err = errors.Join(err, fmt.Errorf("worker: %w", err1))
+	}
+	if err1 := c.Email.Validate(); err1 != nil {
+		err = errors.Join(err, fmt.Errorf("email: %w", err1))
 	}
 
 	return err

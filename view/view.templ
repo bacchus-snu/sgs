@@ -18,16 +18,33 @@ templ page(title string) {
 						</a>
 					</h1>
 					if user := ctxUserOrNil(ctx); user != nil {
-						<a class={ classButtonPrimary, "ml-auto" } href="https://sgs-docs.snucse.org">
-							Docs
-						</a>
+						if user.IsAdmin() {
+							if ctxIsSubscribed(ctx) {
+								<form method="post" action="/mail/unsubscribe" class="ml-auto">
+									<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+									<button type="submit" class={ classButtonSecondary }>Unsubscribe from mailing list</button>
+								</form>
+							} else {
+								<form method="post" action="/mail/subscribe" class="ml-auto">
+									<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
+									<button type="submit" class={ classButtonPrimary }>Subscribe to mailing list</button>
+								</form>
+							}
+							<a class={ classButtonPrimary, "ml-2" } href="https://sgs-docs.snucse.org">
+								Docs
+							</a>
+						} else {
+							<a class={ classButtonPrimary, "ml-auto" } href="https://sgs-docs.snucse.org">
+								Docs
+							</a>
+						}
 						<a class={ classButtonPrimary, "ml-2" } href="/request">
 							Workspace request
 						</a>
-						<div class="ml-4 flex items-center gap-2 rounded-full bg-white/60 px-4 py-1.5 shadow-sm border border-blue-300">
+						<div class="ml-4 flex flex-col md:flex-row md:items-center md:gap-2 rounded-full bg-white/60 px-4 py-1.5 shadow-sm border border-blue-300 text-center md:text-left">
 							<span class="font-semibold text-gray-800">{ user.Username }</span>
 							if user.Email != "" {
-								<span class="text-gray-600">({ user.Email })</span>
+								<span class="text-gray-600 text-sm md:text-base">({ user.Email })</span>
 							}
 						</div>
 						<a class="ml-2 flex items-center gap-2 rounded-full bg-white/60 px-4 py-1.5 shadow-sm border border-blue-300 hover:bg-white/80" href="/auth/logout">

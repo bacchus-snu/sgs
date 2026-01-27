@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS mailing_list (
+    username TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

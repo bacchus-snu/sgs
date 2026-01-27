@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 
+	"github.com/bacchus-snu/sgs/model"
 	"github.com/bacchus-snu/sgs/pkg/auth"
 	"github.com/bacchus-snu/sgs/view"
 )
@@ -18,6 +19,20 @@ func middlewareAuth() echo.MiddlewareFunc {
 			sess, _ := session.Get("session", c)
 			if user, ok := sess.Values["user"].(*auth.User); ok {
 				c.Set("user", user)
+			}
+			return next(c)
+		}
+	}
+}
+
+// middlewareSubscriptionStatus checks if the logged-in admin is subscribed to the mailing list.
+func middlewareSubscriptionStatus(mlSvc model.MailingListService) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user, _ := c.Get("user").(*auth.User)
+			if user != nil && user.IsAdmin() {
+				isSubscribed, _ := mlSvc.IsSubscribed(c.Request().Context(), user.Username)
+				c.Set("isSubscribed", isSubscribed)
 			}
 			return next(c)
 		}

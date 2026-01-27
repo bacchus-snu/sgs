@@ -17,6 +17,7 @@ import (
 
 	"github.com/bacchus-snu/sgs/model"
 	"github.com/bacchus-snu/sgs/pkg/auth"
+	"github.com/bacchus-snu/sgs/pkg/email"
 	"github.com/bacchus-snu/sgs/view"
 	"github.com/bacchus-snu/sgs/worker"
 )
@@ -50,6 +51,8 @@ func AddRoutes(
 	queue worker.Queue,
 	authSvc auth.Service,
 	wsSvc model.WorkspaceService,
+	mlSvc model.MailingListService,
+	emailSvc email.Service,
 ) {
 	stor := sessions.NewCookieStore(cfg.sessionKey)
 	stor.Options.SameSite = http.SameSiteLaxMode
@@ -105,6 +108,7 @@ func AddRoutes(
 
 		session.Middleware(stor),
 		middlewareAuth(),
+		middlewareSubscriptionStatus(mlSvc),
 	)
 
 	e.GET("/healthz", func(c echo.Context) error {
@@ -121,10 +125,14 @@ func AddRoutes(
 
 	e.GET("/", handleListWorkspaces(wsSvc), requireAuth).Name = "workspace-list"
 	e.GET("/ws/:id", handleWorkspaceDetails(wsSvc), requireAuth).Name = "workspace-details"
-	e.POST("/ws/:id", handleUpdateWorkspace(queue, wsSvc), requireAuth)
+	e.POST("/ws/:id", handleUpdateWorkspace(queue, wsSvc, emailSvc), requireAuth)
 	e.POST("/ws/:id/accept", handleAcceptInvitation(wsSvc), requireAuth).Name = "workspace-accept"
 	e.POST("/ws/:id/decline", handleDeclineInvitation(wsSvc), requireAuth).Name = "workspace-decline"
 
 	e.GET("/request", handleRequestWorkspaceForm(), requireAuth)
-	e.POST("/request", handleRequestWorkspace(wsSvc), requireAuth)
+	e.POST("/request", handleRequestWorkspace(wsSvc, mlSvc, emailSvc), requireAuth)
+
+	// Mailing list routes (admin only, but auth checked in handler)
+	e.POST("/mail/subscribe", handleSubscribe(mlSvc), requireAuth)
+	e.POST("/mail/unsubscribe", handleUnsubscribe(mlSvc), requireAuth)
 }

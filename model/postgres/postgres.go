@@ -94,6 +94,10 @@ func (r *Repository) Workspaces() *workspacesRepository {
 	return &workspacesRepository{r.pool}
 }
 
+func (r *Repository) MailingList() *mailingListRepository {
+	return &mailingListRepository{r.pool}
+}
+
 type workspacesRepository struct {
 	pool *pgxpool.Pool
 }

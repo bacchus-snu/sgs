@@ -147,9 +147,12 @@ templ workspaceDetails(ws, newWS *model.Workspace) {
 		<div class="grid grid-cols-3 gap-4">
 			<span class="font-bold text-center col-start-2">Current</span>
 			<span class="font-bold text-center">Changes</span>
-			<label class={ classLabel }>Enabled</label>
-			<input class={ "justify-self-center", "self-center", classDisabled } type="checkbox" checked?={ ws.Enabled } disabled/>
-			<input class="justify-self-center self-center" type="checkbox" id="enabled" name="enabled" checked?={ newWS.Enabled }/>
+			// Show Enabled row only for admins - regular users always want enabled=true
+			if ctxUser(ctx).IsAdmin() {
+				<label class={ classLabel }>Enabled</label>
+				<input class={ "justify-self-center", "self-center", classDisabled } type="checkbox" checked?={ ws.Enabled } disabled/>
+				<input class="justify-self-center self-center" type="checkbox" id="enabled" name="enabled" checked?={ newWS.Enabled }/>
+			}
 			<label class={ classLabel }>Nodegroup</label>
 			<select class={ classDisabled } disabled>
 				<option>{ string(ws.Nodegroup) }</option>
@@ -284,9 +287,9 @@ templ workspaceDetails(ws, newWS *model.Workspace) {
 		<input type="hidden" id="quota-memory-requests" name="quota-memory-requests" value={ fmt.Sprint(newWS.Quotas[model.ResMemoryRequest]) }/>
 		<input type="hidden" name="_csrf" value={ ctxCSRF(ctx) }/>
 		<div class="m-4 flex flex-wrap justify-center gap-4">
-			if slices.Contains(model.Usernames(ws.Users), ctxUser(ctx).Username) {
-				// The user may be an admin & not in the user list in which case they're not allowed to request changes.
-				// They can outright update or delete the workspace instead.
+			if slices.Contains(model.Usernames(ws.Users), ctxUser(ctx).Username) && !ctxUser(ctx).IsAdmin() {
+				// Regular users can request changes to their workspace.
+				// Admins use "Update" instead (even if they're in the user list).
 				<button class={ classButtonPrimary } name="action" value="request">
 					Request changes
 				</button>

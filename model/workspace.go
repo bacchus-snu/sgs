@@ -193,3 +193,21 @@ type WorkspaceService interface {
 
 	DeleteWorkspace(ctx context.Context, id ID) error
 }
+
+// Subscriber represents an admin subscribed to email notifications.
+type Subscriber struct {
+	Username string
+	Email    string
+}
+
+// MailingListService manages admin notification subscriptions.
+type MailingListService interface {
+	// Subscribe adds an admin to the mailing list.
+	Subscribe(ctx context.Context, username, email string) error
+	// Unsubscribe removes an admin from the mailing list.
+	Unsubscribe(ctx context.Context, username string) error
+	// IsSubscribed checks if an admin is subscribed.
+	IsSubscribed(ctx context.Context, username string) (bool, error)
+	// ListSubscribers returns all subscribed admins.
+	ListSubscribers(ctx context.Context) ([]Subscriber, error)
+}
