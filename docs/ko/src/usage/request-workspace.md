@@ -3,7 +3,7 @@
 [id]: https://id.snucse.org
 [sgs-request]: https://sgs.snucse.org/request
 
-> 시작하기 전에 `undergraduate` 또는 `graduate` 그룹에 등록된 [스누씨 계정][id]이 필요합니다.
+> 시작하기 전에 `undergraduate`, `graduate`, 또는 `professor` 그룹에 등록된 [스누씨 계정][id]이 필요합니다.
 
 워크스페이스를 신청하려면 SGS [워크스페이스 관리 페이지][sgs-request]에서 신청 양식을 작성하세요.
 

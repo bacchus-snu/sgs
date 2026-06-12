@@ -10,7 +10,6 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/bacchus-snu/sgs/model"
-	"slices"
 )
 
 const reasonPlaceholder = `Protein Language Model을 활용해 Protein의 특성을 예측하는 연구를 진행하고 있습니다. GPU 1장에서 모델 fine-tuning과 evaulation을 진행하고자 합니다.
@@ -94,7 +93,7 @@ func PageRequestForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, ng := range model.Nodegroups {
-				if slices.Contains(ctxUser(ctx).Groups, string(ng)) {
+				if ng.AvailableToGroups(ctxUser(ctx).Groups) {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<option value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -102,7 +101,7 @@ func PageRequestForm() templ.Component {
 					var templ_7745c5c3_Var6 string
 					templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(string(ng))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 22, Col: 33}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 21, Col: 33}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 					if templ_7745c5c3_Err != nil {
@@ -115,7 +114,7 @@ func PageRequestForm() templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(string(ng))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 22, Col: 48}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 21, Col: 48}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 					if templ_7745c5c3_Err != nil {
@@ -156,7 +155,7 @@ func PageRequestForm() templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(reasonPlaceholder)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 27, Col: 105}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 26, Col: 105}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
@@ -367,7 +366,7 @@ func PageRequestForm() templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(ctxCSRF(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 82, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 81, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
@@ -455,7 +454,7 @@ func reqQuotaInput(label, name, units string) templ.Component {
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 93, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 92, Col: 54}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
@@ -468,7 +467,7 @@ func reqQuotaInput(label, name, units string) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 94, Col: 9}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 93, Col: 9}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -486,7 +485,7 @@ func reqQuotaInput(label, name, units string) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(units)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 96, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 95, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -504,7 +503,7 @@ func reqQuotaInput(label, name, units string) templ.Component {
 		var templ_7745c5c3_Var34 string
 		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 99, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 98, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 		if templ_7745c5c3_Err != nil {
@@ -517,7 +516,7 @@ func reqQuotaInput(label, name, units string) templ.Component {
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 99, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 98, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 		if templ_7745c5c3_Err != nil {

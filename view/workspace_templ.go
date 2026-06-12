@@ -683,7 +683,7 @@ func workspaceDetails(ws, newWS *model.Workspace) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, ng := range model.Nodegroups {
-			if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(ng)) {
+			if user := ctxUser(ctx); user.IsAdmin() || ng.AvailableToGroups(user.Groups) {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 53, "<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
