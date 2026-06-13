@@ -491,4 +491,3 @@ func setupOverlayfs(lowerdir, pvcPath string) (string, error) {
 
 	return mergedDir, nil
 }
-

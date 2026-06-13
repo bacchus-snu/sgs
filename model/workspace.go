@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"slices"
 )
 
 // WorkspaceUser represents a user in a workspace with their acceptance status.
@@ -119,13 +120,13 @@ func (ws WorkspaceUpdate) Valid() bool {
 type Resource string
 
 const (
-	ResCPURequest          Resource = "requests.cpu"
-	ResCPULimit            Resource = "limits.cpu"
-	ResMemoryRequest       Resource = "requests.memory"
-	ResMemoryLimit         Resource = "limits.memory"
-	ResStorageRequest      Resource = "requests.storage"
-	ResGPURequest          Resource = "requests.nvidia.com/gpu"
-	ResGPUMemoryRequest    Resource = "requests.nvidia.com/gpumem"
+	ResCPURequest       Resource = "requests.cpu"
+	ResCPULimit         Resource = "limits.cpu"
+	ResMemoryRequest    Resource = "requests.memory"
+	ResMemoryLimit      Resource = "limits.memory"
+	ResStorageRequest   Resource = "requests.storage"
+	ResGPURequest       Resource = "requests.nvidia.com/gpu"
+	ResGPUMemoryRequest Resource = "requests.nvidia.com/gpumem"
 )
 
 var Resources = []Resource{
@@ -149,6 +150,8 @@ type Nodegroup string
 const (
 	NodegroupUndergraduate Nodegroup = "undergraduate"
 	NodegroupGraduate      Nodegroup = "graduate"
+
+	UserGroupProfessor = "professor"
 )
 
 var Nodegroups = []Nodegroup{
@@ -162,6 +165,13 @@ func (n Nodegroup) Valid() bool {
 		return true
 	}
 	return false
+}
+
+func (n Nodegroup) AvailableToGroups(groups []string) bool {
+	if !n.Valid() {
+		return false
+	}
+	return slices.Contains(groups, string(n)) || slices.Contains(groups, UserGroupProfessor)
 }
 
 type WorkspaceService interface {
