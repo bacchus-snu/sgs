@@ -61,7 +61,7 @@ templ PageWorkspaceList(wss []*model.Workspace, invitations []*model.Workspace) 
 			for _, ws := range wss {
 				<a href={ templ.URL(fmt.Sprintf("/ws/%s", ws.ID.Hash())) }>
 					<li class="rounded p-2 hover:bg-gray-200">
-						<div class='flex items-baseline'>
+						<div class="flex items-baseline">
 							<h1 class="text-lg font-mono font-bold">{ ws.ID.Hash() }</h1>
 							<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
 							@wsStatusButton(ws)
@@ -135,7 +135,7 @@ templ wsStatusButton(ws *model.Workspace) {
 }
 
 templ workspaceDetails(ws, newWS *model.Workspace) {
-	<div class='flex items-baseline'>
+	<div class="flex items-baseline">
 		<h1 class="text-lg font-bold font-mono">{ ws.ID.Hash() }</h1>
 		<h2 class="ml-2 text-gray-500">ID: { fmt.Sprint(ws.ID) }</h2>
 		@wsStatusButton(ws)
