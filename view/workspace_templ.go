@@ -463,7 +463,7 @@ func workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) templ.Compo
 			return templ_7745c5c3_Err
 		}
 		for _, ng := range model.Nodegroups {
-			if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(ng)) {
+			if user := ctxUser(ctx); user.IsAdmin() || ng.AvailableToGroups(user.Groups) {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err

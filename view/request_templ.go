@@ -8,10 +8,7 @@ package view
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import (
-	"github.com/bacchus-snu/sgs/model"
-	"slices"
-)
+import "github.com/bacchus-snu/sgs/model"
 
 const reasonPlaceholder = `Protein Language Model을 활용해 Protein의 특성을 예측하는 연구를 진행하고 있습니다. GPU 1장에서 모델 fine-tuning과 evaulation을 진행하고자 합니다.
 Huggingface상의 facebook/esm2_t33_650M_UR50D (약 3GB) 및 facebook/esm2_t36_3B_UR50D (약 11GB) 두 모델 종류를 사용합니다.
@@ -74,7 +71,7 @@ func PageRequestForm() templ.Component {
 				return templ_7745c5c3_Err
 			}
 			for _, ng := range model.Nodegroups {
-				if slices.Contains(ctxUser(ctx).Groups, string(ng)) {
+				if ng.AvailableToGroups(ctxUser(ctx).Groups) {
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err

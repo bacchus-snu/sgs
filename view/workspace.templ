@@ -112,7 +112,7 @@ templ workspaceDetails(ws, newWS *model.Workspace, kubeconfig string) {
 			<select id="nodegroup" name="nodegroup" required>
 				<option value="">Select a nodegroup</option>
 				for _, ng := range model.Nodegroups {
-					if user := ctxUser(ctx); user.IsAdmin() || slices.Contains(user.Groups, string(ng)) {
+					if user := ctxUser(ctx); user.IsAdmin() || ng.AvailableToGroups(user.Groups) {
 						<option value={ string(ng) } selected?={ ng == newWS.Nodegroup }>{ string(ng) }</option>
 					}
 				}

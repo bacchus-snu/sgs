@@ -3,7 +3,6 @@ package controller
 import (
 	_ "embed"
 	"net/http"
-	"slices"
 	"strings"
 	"text/template"
 
@@ -81,7 +80,7 @@ func checkNodegroups(user *auth.User, nodegroup string) error {
 	if !model.Nodegroup(nodegroup).Valid() {
 		return echo.ErrBadRequest
 	}
-	if slices.Contains(user.Groups, nodegroup) {
+	if model.Nodegroup(nodegroup).AvailableToGroups(user.Groups) {
 		return nil
 	}
 	return echo.ErrForbidden

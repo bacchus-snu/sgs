@@ -4,7 +4,7 @@
 [sgs-request]: https://sgs.snucse.org/request
 
 > Before continuing, you must already have a [SNUCSE ID][id] account registered
-> in either the `undergraduate` or `graduate` groups.
+> in the `undergraduate`, `graduate`, or `professor` group.
 
 To request a workspace, fill out the Workspace request form on the SGS
 [workspace management page][sgs-request].
