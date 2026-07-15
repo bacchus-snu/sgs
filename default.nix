@@ -26,7 +26,7 @@ in
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-anxnVSZFLZpPJUEEv4UHyQPC6DHjIp8Aar69UsApwTc=";
+  vendorHash = "sha256-Oyaf/XzJaQCuBNUH7OKDlu3H+qUrIy1iOb5sYglhqoQ=";
 
   ldflags = [
     "-s"
