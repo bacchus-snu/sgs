@@ -95,7 +95,6 @@ func handleRequestWorkspace(
 		Nodegroup          string `form:"nodegroup"`
 		Userdata           string `form:"userdata"`
 		QuotaGPU           uint64 `form:"quota-gpu"`
-		QuotaGPUMemory     uint64 `form:"quota-gpu-memory"`
 		QuotaStorage       uint64 `form:"quota-storage"`
 		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
 		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
@@ -114,13 +113,12 @@ func handleRequestWorkspace(
 			Nodegroup: model.Nodegroup(req.Nodegroup),
 			Userdata:  req.Userdata,
 			Quotas: map[model.Resource]uint64{
-				model.ResGPURequest:       req.QuotaGPU,
-				model.ResGPUMemoryRequest: req.QuotaGPUMemory,
-				model.ResStorageRequest:   req.QuotaStorage,
-				model.ResCPURequest:       req.QuotaCPURequest,
-				model.ResCPULimit:         req.QuotaCPULimit,
-				model.ResMemoryRequest:    req.QuotaMemoryRequest,
-				model.ResMemoryLimit:      req.QuotaMemoryLimit,
+				model.ResGPURequest:     req.QuotaGPU,
+				model.ResStorageRequest: req.QuotaStorage,
+				model.ResCPURequest:     req.QuotaCPURequest,
+				model.ResCPULimit:       req.QuotaCPULimit,
+				model.ResMemoryRequest:  req.QuotaMemoryRequest,
+				model.ResMemoryLimit:    req.QuotaMemoryLimit,
 			},
 			Users: []model.WorkspaceUser{{Username: user.Username, Email: user.Email}},
 		}
@@ -163,7 +161,6 @@ func handleUpdateWorkspace(
 		Nodegroup          string `form:"nodegroup"`
 		Userdata           string `form:"userdata"`
 		QuotaGPU           uint64 `form:"quota-gpu"`
-		QuotaGPUMemory     uint64 `form:"quota-gpu-memory"`
 		QuotaStorage       uint64 `form:"quota-storage"`
 		QuotaMemoryRequest uint64 `form:"quota-memory-requests"`
 		QuotaMemoryLimit   uint64 `form:"quota-memory-limits"`
@@ -211,13 +208,12 @@ func handleUpdateWorkspace(
 			Nodegroup:   model.Nodegroup(req.Nodegroup),
 			Userdata:    req.Userdata,
 			Quotas: map[model.Resource]uint64{
-				model.ResGPURequest:       req.QuotaGPU,
-				model.ResGPUMemoryRequest: req.QuotaGPUMemory,
-				model.ResStorageRequest:   req.QuotaStorage,
-				model.ResCPURequest:       req.QuotaCPURequest,
-				model.ResCPULimit:         req.QuotaCPULimit,
-				model.ResMemoryRequest:    req.QuotaMemoryRequest,
-				model.ResMemoryLimit:      req.QuotaMemoryLimit,
+				model.ResGPURequest:     req.QuotaGPU,
+				model.ResStorageRequest: req.QuotaStorage,
+				model.ResCPURequest:     req.QuotaCPURequest,
+				model.ResCPULimit:       req.QuotaCPULimit,
+				model.ResMemoryRequest:  req.QuotaMemoryRequest,
+				model.ResMemoryLimit:    req.QuotaMemoryLimit,
 			},
 		}
 		form, _ := c.FormParams()

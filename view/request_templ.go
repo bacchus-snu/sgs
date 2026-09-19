@@ -202,12 +202,20 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
+			templ_7745c5c3_Err = reqQuotaInput("Storage", "quota-storage", "GiB").Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<div class=\"col-start-1\"></div><p class=\"text-sm text-gray-500\">By default, <span class=\"font-bold\">8 CPUs per GPU</span> are allocated as limits. You may increase this value if needed, but please explain why in the Reason field above.</p>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
 			var templ_7745c5c3_Var14 = []any{"col-start-1", classLabel}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var14...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 17, "<label class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "<label class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -220,54 +228,7 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 18, "\" for=\"quota-gpu-memory\">GPU Memory (per GPU) <span class=\"text-sm font-normal text-gray-500\">GiB</span></label> ")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, reqUpdateDefaults())
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<input class=\"h-fit\" id=\"quota-gpu-memory\" name=\"quota-gpu-memory\" type=\"number\" min=\"0\" step=\"any\" value=\"0\" required oninput=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var16 templ.ComponentScript = reqUpdateDefaults()
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16.Call)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = reqQuotaInput("Storage", "quota-storage", "GiB").Render(ctx, templ_7745c5c3_Buffer)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"col-start-1\"></div><p class=\"text-sm text-gray-500\">By default, <span class=\"font-bold\">8 CPUs per GPU</span> and <span class=\"font-bold\">1.5× total GPU memory as host memory</span> are allocated as limits. You may increase these values if needed, but please explain why in the Reason field above.</p>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var17 = []any{"col-start-1", classLabel}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var17...)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<label class=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var18 string
-			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var17).String())
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 1, Col: 0}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\" for=\"quota-cpu-limits\">CPUs</label><div class=\"flex items-center gap-2\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "\" for=\"quota-cpu-limits\">CPUs</label><div class=\"flex items-center gap-2\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -275,16 +236,16 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<input class=\"h-fit flex-1\" id=\"quota-cpu-limits\" name=\"quota-cpu-limits\" type=\"number\" min=\"0\" value=\"0\" required oninput=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "<input class=\"h-fit flex-1\" id=\"quota-cpu-limits\" name=\"quota-cpu-limits\" type=\"number\" min=\"0\" value=\"0\" required oninput=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var19 templ.ComponentScript = reqValidateLimits()
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19.Call)
+			var templ_7745c5c3_Var16 templ.ComponentScript = reqValidateLimits()
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16.Call)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "\"> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -292,55 +253,38 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<input type=\"checkbox\" id=\"guarantee-cpu\" name=\"guarantee-cpu\" onchange=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "<input type=\"checkbox\" id=\"guarantee-cpu\" name=\"guarantee-cpu\" onchange=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var20 templ.ComponentScript = reqToggleGuaranteeCPU()
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20.Call)
+			var templ_7745c5c3_Var17 templ.ComponentScript = reqToggleGuaranteeCPU()
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17.Call)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\"> <label for=\"guarantee-cpu\" class=\"text-sm whitespace-nowrap\">Guarantee</label></div><p id=\"cpu-error\" class=\"hidden col-start-2 text-sm text-red-600 font-bold\"></p><div id=\"cpu-warning-spacer\" class=\"hidden col-start-1\"></div><p id=\"cpu-warning\" class=\"hidden text-sm text-amber-600\">⚠️ Guaranteed resources are reserved exclusively for your workspace. Only enable this for workloads requiring resource isolation (e.g., performance benchmarking). This may prevent other users from creating sessions due to resource scarcity.</p>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "\"> <label for=\"guarantee-cpu\" class=\"text-sm whitespace-nowrap\">Guarantee</label></div><p id=\"cpu-error\" class=\"hidden col-start-2 text-sm text-red-600 font-bold\"></p><div id=\"cpu-warning-spacer\" class=\"hidden col-start-1\"></div><p id=\"cpu-warning\" class=\"hidden text-sm text-amber-600\">⚠️ Guaranteed resources are reserved exclusively for your workspace. Only enable this for workloads requiring resource isolation (e.g., performance benchmarking). This may prevent other users from creating sessions due to resource scarcity.</p>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var21 = []any{"col-start-1", classLabel}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var21...)
+			var templ_7745c5c3_Var18 = []any{"col-start-1", classLabel}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var18...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "<label class=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<label class=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var22 string
-			templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var21).String())
+			var templ_7745c5c3_Var19 string
+			templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var18).String())
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 1, Col: 0}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "\" for=\"quota-memory-limits\">Host Memory <span class=\"text-sm font-normal text-gray-500\">GiB</span></label><div class=\"flex items-center gap-2\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templ.RenderScriptItems(ctx, templ_7745c5c3_Buffer, reqValidateLimits())
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "<input class=\"h-fit flex-1\" id=\"quota-memory-limits\" name=\"quota-memory-limits\" type=\"number\" min=\"0\" step=\"any\" value=\"0\" required oninput=\"")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var23 templ.ComponentScript = reqValidateLimits()
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23.Call)
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "\"> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "\" for=\"quota-memory-limits\">Host Memory <span class=\"text-sm font-normal text-gray-500\">GiB</span></label><div class=\"flex items-center gap-2\"><input class=\"h-fit flex-1\" id=\"quota-memory-limits\" name=\"quota-memory-limits\" type=\"number\" min=\"0\" step=\"any\" value=\"0\" required> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -348,51 +292,51 @@ func PageRequestForm() templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "<input type=\"checkbox\" id=\"guarantee-memory\" name=\"guarantee-memory\" onchange=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<input type=\"checkbox\" id=\"guarantee-memory\" name=\"guarantee-memory\" onchange=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var24 templ.ComponentScript = reqToggleGuaranteeMemory()
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24.Call)
+			var templ_7745c5c3_Var20 templ.ComponentScript = reqToggleGuaranteeMemory()
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var20.Call)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\"> <label for=\"guarantee-memory\" class=\"text-sm whitespace-nowrap\">Guarantee</label></div><p id=\"memory-error\" class=\"hidden col-start-2 text-sm text-red-600 font-bold\"></p><div id=\"memory-warning-spacer\" class=\"hidden col-start-1\"></div><p id=\"memory-warning\" class=\"hidden text-sm text-amber-600\">⚠️ Guaranteed resources are reserved exclusively for your workspace. Only enable this for workloads requiring resource isolation (e.g., performance benchmarking). This may prevent other users from creating sessions due to resource scarcity.</p></div><input type=\"hidden\" id=\"quota-cpu-requests\" name=\"quota-cpu-requests\" value=\"0\"> <input type=\"hidden\" id=\"quota-memory-requests\" name=\"quota-memory-requests\" value=\"0\"> <input type=\"hidden\" name=\"_csrf\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "\"> <label for=\"guarantee-memory\" class=\"text-sm whitespace-nowrap\">Guarantee</label></div><div id=\"memory-warning-spacer\" class=\"hidden col-start-1\"></div><p id=\"memory-warning\" class=\"hidden text-sm text-amber-600\">⚠️ Guaranteed resources are reserved exclusively for your workspace. Only enable this for workloads requiring resource isolation (e.g., performance benchmarking). This may prevent other users from creating sessions due to resource scarcity.</p></div><input type=\"hidden\" id=\"quota-cpu-requests\" name=\"quota-cpu-requests\" value=\"0\"> <input type=\"hidden\" id=\"quota-memory-requests\" name=\"quota-memory-requests\" value=\"0\"> <input type=\"hidden\" name=\"_csrf\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var25 string
-			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(ctxCSRF(ctx))
+			var templ_7745c5c3_Var21 string
+			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(ctxCSRF(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 79, Col: 57}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 72, Col: 57}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, "\"><div class=\"m-4 flex flex-col items-center justify-center\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 = []any{classButtonPrimary}
-			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var26...)
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 28, "\"><div class=\"m-4 flex flex-col items-center justify-center\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<button class=\"")
+			var templ_7745c5c3_Var22 = []any{classButtonPrimary}
+			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var22...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var27 string
-			templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var26).String())
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<button class=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var23 string
+			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var22).String())
 			if templ_7745c5c3_Err != nil {
 				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 1, Col: 0}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "\" name=\"action\" value=\"request\">Submit</button></div></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" name=\"action\" value=\"request\">Submit</button></div></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -422,105 +366,105 @@ func reqQuotaInput(label, name, units string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var28 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var28 == nil {
-			templ_7745c5c3_Var28 = templ.NopComponent
+		templ_7745c5c3_Var24 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var24 == nil {
+			templ_7745c5c3_Var24 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		var templ_7745c5c3_Var29 = []any{"col-start-1", classLabel}
-		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var29...)
+		var templ_7745c5c3_Var25 = []any{"col-start-1", classLabel}
+		templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var25...)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "<label class=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 31, "<label class=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var26 string
+		templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var25).String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 1, Col: 0}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 32, "\" for=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var27 string
+		templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(name)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 83, Col: 54}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 33, "\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var28 string
+		templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(label)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 84, Col: 9}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 34, " ")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if units != "" {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 35, "<span class=\"text-sm font-normal text-gray-500\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var29 string
+			templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(units)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 86, Col: 58}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</span>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 37, "</label> <input class=\"h-fit\" id=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var30 string
-		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(templ.CSSClasses(templ_7745c5c3_Var29).String())
+		templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 1, Col: 0}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 89, Col: 31}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" for=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 38, "\" name=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var31 string
 		templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 90, Col: 54}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 89, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var32 string
-		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(label)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 91, Col: 9}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, " ")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		if units != "" {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 41, "<span class=\"text-sm font-normal text-gray-500\">")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			var templ_7745c5c3_Var33 string
-			templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(units)
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 93, Col: 58}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "</span>")
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 43, "</label> <input class=\"h-fit\" id=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var34 string
-		templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 96, Col: 31}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 44, "\" name=\"")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var35 string
-		templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(name)
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `view/request.templ`, Line: 96, Col: 45}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 45, "\" type=\"number\" min=\"0\" step=\"any\" value=\"0\" required>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 39, "\" type=\"number\" min=\"0\" step=\"any\" value=\"0\" required>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -530,53 +474,40 @@ func reqQuotaInput(label, name, units string) templ.Component {
 
 func reqUpdateDefaults() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_reqUpdateDefaults_e38c`,
-		Function: `function __templ_reqUpdateDefaults_e38c(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
-	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+		Name: `__templ_reqUpdateDefaults_670d`,
+		Function: `function __templ_reqUpdateDefaults_670d(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
 
 	const minCpu = gpuCount * 8;
-	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
 
 	const cpuInput = document.getElementById('quota-cpu-limits');
-	const memInput = document.getElementById('quota-memory-limits');
 
-	// Update minimum attributes (use raw floating point for validation)
+	// Update minimum attributes
 	cpuInput.min = minCpu;
-	memInput.min = minMemGiB;
 
 	// Always update to calculated defaults when GPU values change
 	cpuInput.value = minCpu;
-	memInput.value = minMemGiB;
 
 	// Clear any validation errors since we just set valid values
 	const cpuError = document.getElementById('cpu-error');
-	const memError = document.getElementById('memory-error');
 	cpuInput.classList.remove('border-red-500', 'border-2');
 	cpuError.classList.add('hidden');
-	memInput.classList.remove('border-red-500', 'border-2');
-	memError.classList.add('hidden');
 }`,
-		Call:       templ.SafeScript(`__templ_reqUpdateDefaults_e38c`),
-		CallInline: templ.SafeScriptInline(`__templ_reqUpdateDefaults_e38c`),
+		Call:       templ.SafeScript(`__templ_reqUpdateDefaults_670d`),
+		CallInline: templ.SafeScriptInline(`__templ_reqUpdateDefaults_670d`),
 	}
 }
 
 func reqValidateLimits() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_reqValidateLimits_adc3`,
-		Function: `function __templ_reqValidateLimits_adc3(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
-	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+		Name: `__templ_reqValidateLimits_4648`,
+		Function: `function __templ_reqValidateLimits_4648(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
 
 	const minCpu = gpuCount * 8;
-	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
 
 	const cpuInput = document.getElementById('quota-cpu-limits');
-	const memInput = document.getElementById('quota-memory-limits');
 	const cpuError = document.getElementById('cpu-error');
-	const memError = document.getElementById('memory-error');
 
 	const cpuValue = parseInt(cpuInput.value) || 0;
-	const memValue = parseFloat(memInput.value) || 0;
 
 	// CPU validation
 	if (cpuValue < minCpu) {
@@ -587,19 +518,9 @@ func reqValidateLimits() templ.ComponentScript {
 		cpuInput.classList.remove('border-red-500', 'border-2');
 		cpuError.classList.add('hidden');
 	}
-
-	// Memory validation
-	if (memValue < minMemGiB) {
-		memInput.classList.add('border-red-500', 'border-2');
-		memError.textContent = ` + "`" + `Host Memory must be at least ${minMemGiB} GiB (1.5 × ${gpuCount} GPUs × ${gpuMemGiB} GiB)` + "`" + `;
-		memError.classList.remove('hidden');
-	} else {
-		memInput.classList.remove('border-red-500', 'border-2');
-		memError.classList.add('hidden');
-	}
 }`,
-		Call:       templ.SafeScript(`__templ_reqValidateLimits_adc3`),
-		CallInline: templ.SafeScriptInline(`__templ_reqValidateLimits_adc3`),
+		Call:       templ.SafeScript(`__templ_reqValidateLimits_4648`),
+		CallInline: templ.SafeScriptInline(`__templ_reqValidateLimits_4648`),
 	}
 }
 
@@ -653,18 +574,15 @@ func reqToggleGuaranteeMemory() templ.ComponentScript {
 
 func reqValidateForm() templ.ComponentScript {
 	return templ.ComponentScript{
-		Name: `__templ_reqValidateForm_073b`,
-		Function: `function __templ_reqValidateForm_073b(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
-	const gpuMemGiB = parseFloat(document.getElementById('quota-gpu-memory').value) || 0;
+		Name: `__templ_reqValidateForm_9d4e`,
+		Function: `function __templ_reqValidateForm_9d4e(){const gpuCount = parseInt(document.getElementById('quota-gpu').value) || 0;
 
 	const minCpu = gpuCount * 8;
-	const minMemGiB = gpuCount * gpuMemGiB * 1.5;
 
 	const cpuValue = parseInt(document.getElementById('quota-cpu-limits').value) || 0;
 	const memValue = parseFloat(document.getElementById('quota-memory-limits').value) || 0;
 
 	// Round floating point values to integers before submission (backend expects uint64)
-	document.getElementById('quota-gpu-memory').value = Math.ceil(gpuMemGiB);
 	document.getElementById('quota-storage').value = Math.ceil(parseFloat(document.getElementById('quota-storage').value) || 0);
 	document.getElementById('quota-memory-limits').value = Math.ceil(memValue);
 
@@ -674,15 +592,15 @@ func reqValidateForm() templ.ComponentScript {
 	document.getElementById('quota-cpu-requests').value = cpuCheckbox.checked ? cpuValue : 0;
 	document.getElementById('quota-memory-requests').value = memCheckbox.checked ? Math.ceil(memValue) : 0;
 
-	if (cpuValue < minCpu || memValue < minMemGiB) {
+	if (cpuValue < minCpu) {
 		event.preventDefault();
 		reqValidateLimits();
 		return false;
 	}
 	return true;
 }`,
-		Call:       templ.SafeScript(`__templ_reqValidateForm_073b`),
-		CallInline: templ.SafeScriptInline(`__templ_reqValidateForm_073b`),
+		Call:       templ.SafeScript(`__templ_reqValidateForm_9d4e`),
+		CallInline: templ.SafeScriptInline(`__templ_reqValidateForm_9d4e`),
 	}
 }
 
