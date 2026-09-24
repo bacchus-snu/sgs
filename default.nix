@@ -18,7 +18,7 @@ let
   npmDeps = fetchNpmDeps {
     name = "sgs-npm-deps";
     inherit src;
-    hash = "sha256-rrLnKyko1OwqkMRPVshyKJ8FJFKEVWUy2JN3/2QNwZw=";
+    hash = "sha256-oI6O1WjVaAI8iTvLvrDp92rVfQnGhu5tV/p7afM+VYY=";
     env.NODE_ENV = "production";
   };
 in
@@ -26,7 +26,7 @@ in
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-UvUDelsvX6EIau3DB7FQVrQQ/PDmxoU0bVET/Ckmcf4=";
+  vendorHash = "sha256-Oyaf/XzJaQCuBNUH7OKDlu3H+qUrIy1iOb5sYglhqoQ=";
 
   ldflags = [
     "-s"

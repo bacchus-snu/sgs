@@ -2,7 +2,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    templ.url = "github:a-h/templ/v0.3.977";
+    templ.url = "github:a-h/templ/v0.3.1020";
     templ.inputs.nixpkgs.follows = "nixpkgs";
   };
 
