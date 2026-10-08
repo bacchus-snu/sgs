@@ -217,9 +217,7 @@ exclusively allocated to your pod as long as this pod is running.
 
 <div class="warning">
 
-If you allocate GPU resources but let the GPU idle for extended periods of time,
-**we will terminate your pod without warning**. Furthermore, your access may be
-permanently restricted. We actively monitor GPU utilization and take action if
+A pod with allocated GPUs is **automatically terminated if it does not use the GPU for 30 minutes or more**. For work that does not use the GPU, run a pod without GPU allocation. Running workloads unrelated to your research on the GPU to avoid automatic termination is prohibited. Furthermore, your access may be permanently restricted. We actively monitor GPU utilization and take action if
 we detect abuse.
 
 This warning also applies for "guaranteed" CPU or memory quotas.
