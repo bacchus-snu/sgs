@@ -6,6 +6,12 @@
 > Before continuing, you must already have a [SNUCSE ID][id] account registered
 > in the `undergraduate`, `graduate`, or `professor` group.
 
+<div class="warning">
+
+The "bentley" node (`graduate` nodegroup) and the "porsche" node (`undergraduate` nodegroup) are temporarily unavailable. Graduate researchers should request a workspace in the `graduate` nodegroup. Bacchus will change the workspace to the `undergraduate` nodegroup.
+
+</div>
+
 To request a workspace, fill out the Workspace request form on the SGS
 [workspace management page][sgs-request].
 

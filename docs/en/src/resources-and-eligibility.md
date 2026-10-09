@@ -12,16 +12,26 @@ We offer SNUCSE GPU Service to SNU undergraduate researchers who meet one of the
 
 ### Node group
 
-The node group for undergraduate researchers includes the "ford" and "ferrari" nodes.
+The node group for undergraduate researchers includes the "ford", "ferrari", and "porsche" nodes.
+
+<div class="warning">
+
+The "porsche" node is temporarily unavailable.
+
+</div>
 
 - ProLiant XL645d Gen10 Plus "ford"
   - NVIDIA A100 40GB x 4
   - AMD EPYC 75F3 x 1, 64 threads
   - 768GB DDR4
 - ProLiant XL675d Gen10 Plus "ferrari"
-  - NVIDIA A100 80GB x 8
+  - NVIDIA A100 80GB x 7
   - AMD EPYC 7763 x 2, 256 threads
   - 1024GB DDR4
+- "porsche"
+  - NVIDIA A100 80GB x 8
+  - AMD EPYC 75F3 x 2, 128 threads
+  - 1024GB
 
 ## For graduate researchers
 
@@ -35,6 +45,12 @@ We offer SNUCSE GPU Service to SNU graduate researchers who meet one of the foll
 ### Node group
 
 The node group for graduate researchers includes the "bentley" node.
+
+<div class="warning">
+
+The "bentley" node is temporarily unavailable. Graduate researchers should request a workspace in the `graduate` nodegroup. Bacchus will change the workspace to the `undergraduate` nodegroup.
+
+</div>
 
 - NVIDIA DGX A100 "bentley"
   - NVIDIA A100 40GB x 8

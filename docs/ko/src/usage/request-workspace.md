@@ -5,6 +5,14 @@
 
 > 시작하기 전에 `undergraduate`, `graduate`, 또는 `professor` 그룹에 등록된 [스누씨 계정][id]이 필요합니다.
 
+<div class="warning">
+
+bentley 노드(`graduate` 노드그룹)와 porsche 노드(`undergraduate` 노드그룹)를 임시로 사용할 수 없습니다.
+대학원생은 `graduate` 노드그룹으로 워크스페이스를 신청해주세요.
+바쿠스에서 워크스페이스를 `undergraduate` 노드그룹으로 변경합니다.
+
+</div>
+
 워크스페이스를 신청하려면 SGS [워크스페이스 관리 페이지][sgs-request]에서 신청 양식을 작성하세요.
 
 ![워크스페이스 신청 양식](images/request-workspace/ws-request.png)
