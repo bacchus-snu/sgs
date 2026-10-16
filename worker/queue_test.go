@@ -90,8 +90,8 @@ func TestQueue(t *testing.T) {
 		Quotas: map[model.Resource]uint64{
 			model.ResGPURequest: 1,
 		},
-		Users: []model.WorkspaceUser{{Username: "user"}},
-	}, "test@example.com")
+		Users: []string{"user"},
+	})
 	if err != nil {
 		t.Fatalf("CreateWorkspace err = %v; want nil", err)
 	}
@@ -102,7 +102,7 @@ func TestQueue(t *testing.T) {
 		Nodegroup:   ws.Nodegroup,
 		Userdata:    ws.Userdata,
 		Quotas:      ws.Quotas,
-		Users:       model.Usernames(ws.Users),
+		Users:       ws.Users,
 	})
 	if err != nil {
 		t.Fatalf("UpdateWorkspace err = %v; want nil", err)
@@ -116,8 +116,8 @@ func TestQueue(t *testing.T) {
 		Quotas: map[model.Resource]uint64{
 			model.ResGPURequest: 1,
 		},
-		Users: []model.WorkspaceUser{{Username: "user"}},
-	}, "test@example.com")
+		Users: []string{"user"},
+	})
 	if err != nil {
 		t.Fatalf("CreateWorkspace err = %v; want nil", err)
 	}
@@ -128,7 +128,7 @@ func TestQueue(t *testing.T) {
 		Nodegroup:   wsDisabled.Nodegroup,
 		Userdata:    wsDisabled.Userdata,
 		Quotas:      wsDisabled.Quotas,
-		Users:       model.Usernames(wsDisabled.Users),
+		Users:       wsDisabled.Users,
 	})
 	if err != nil {
 		t.Fatalf("UpdateWorkspace err = %v; want nil", err)
@@ -139,7 +139,7 @@ func TestQueue(t *testing.T) {
 		Nodegroup:   wsDisabled.Nodegroup,
 		Userdata:    wsDisabled.Userdata,
 		Quotas:      wsDisabled.Quotas,
-		Users:       model.Usernames(wsDisabled.Users),
+		Users:       wsDisabled.Users,
 	})
 	if err != nil {
 		t.Fatalf("UpdateWorkspace err = %v; want nil", err)
@@ -151,8 +151,8 @@ func TestQueue(t *testing.T) {
 		Nodegroup: model.NodegroupUndergraduate,
 		Userdata:  "non-created",
 		Quotas:    map[model.Resource]uint64{},
-		Users:     []model.WorkspaceUser{{Username: "user"}},
-	}, "test@example.com")
+		Users:     []string{"user"},
+	})
 	if err != nil {
 		t.Fatalf("CreateWorkspace err = %v; want nil", err)
 	}

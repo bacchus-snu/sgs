@@ -19,34 +19,16 @@ type renderer struct{}
 type ctxKey string
 
 const (
-	ctxKeyCSRF         ctxKey = "csrf"
-	ctxKeyUser         ctxKey = "user"
-	ctxKeyIsSubscribed ctxKey = "isSubscribed"
+	ctxKeyCSRF ctxKey = "csrf"
+	ctxKeyUser ctxKey = "user"
 )
 
 func ctxCSRF(ctx context.Context) string {
-	if v := ctx.Value(ctxKeyCSRF); v != nil {
-		return v.(string)
-	}
-	return ""
+	return ctx.Value(ctxKeyCSRF).(string)
 }
 
 func ctxUser(ctx context.Context) *auth.User {
 	return ctx.Value(ctxKeyUser).(*auth.User)
-}
-
-func ctxUserOrNil(ctx context.Context) *auth.User {
-	if v := ctx.Value(ctxKeyUser); v != nil {
-		return v.(*auth.User)
-	}
-	return nil
-}
-
-func ctxIsSubscribed(ctx context.Context) bool {
-	if v := ctx.Value(ctxKeyIsSubscribed); v != nil {
-		return v.(bool)
-	}
-	return false
 }
 
 func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error {
@@ -58,9 +40,6 @@ func (r renderer) Render(w io.Writer, _ string, data any, c echo.Context) error 
 	}
 	if csrfToken := c.Get("csrf"); csrfToken != nil {
 		ctx = context.WithValue(ctx, ctxKeyCSRF, csrfToken)
-	}
-	if isSubscribed := c.Get("isSubscribed"); isSubscribed != nil {
-		ctx = context.WithValue(ctx, ctxKeyIsSubscribed, isSubscribed)
 	}
 
 	switch v := data.(type) {

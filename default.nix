@@ -1,7 +1,6 @@
 {
   lib,
   buildGoModule,
-  go_1_25,
   fetchNpmDeps,
   makeWrapper,
   npmHooks,
@@ -22,11 +21,11 @@ let
     env.NODE_ENV = "production";
   };
 in
-(buildGoModule.override { go = go_1_25; }) rec {
+buildGoModule rec {
   name = "sgs";
 
   inherit src;
-  vendorHash = "sha256-UvUDelsvX6EIau3DB7FQVrQQ/PDmxoU0bVET/Ckmcf4=";
+  vendorHash = "sha256-OGmd54ODOsRSlI4/wKtyHLmrJWlMVaMrS7J0GC5d5z0=";
 
   ldflags = [
     "-s"
@@ -36,7 +35,6 @@ in
   subPackages = [
     "cmd/sgs"
     "cmd/sgs-register-harbor"
-    "cmd/sgs-runtime-wrapper"
   ];
   # test all packages
   preCheck = ''

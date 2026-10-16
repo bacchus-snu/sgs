@@ -19,7 +19,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Nodegroup: model.NodegroupUndergraduate,
 				Userdata:  "userdata",
 				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}
 			want.ID = testWorkspaceCreate(t, wsSvc, &want, nil)
 			want.Request = want.InitialRequest()
@@ -53,17 +53,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			want.Nodegroup = changes.Nodegroup
 			want.Userdata = changes.Userdata
 			want.Quotas = changes.Quotas
-			// Convert []string to []WorkspaceUser, preserving existing emails
-			existingEmails := make(map[string]string)
-			for _, u := range want.Users {
-				if u.Email != "" {
-					existingEmails[u.Username] = u.Email
-				}
-			}
-			want.Users = make([]model.WorkspaceUser, len(changes.Users))
-			for i, u := range changes.Users {
-				want.Users[i] = model.WorkspaceUser{Username: u, Email: existingEmails[u]}
-			}
+			want.Users = changes.Users
 			want.Request = nil
 			testWorkspaceUpdate(t, wsSvc, &changes, &want, nil)
 
@@ -89,7 +79,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				Nodegroup: model.NodegroupUndergraduate,
 				Userdata:  "userdata",
 				Quotas:    map[model.Resource]uint64{model.ResGPURequest: 8},
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 				Request: &model.WorkspaceUpdate{
 					WorkspaceID: 123,
 					ByUser:      "user1",
@@ -106,13 +96,13 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			// invalid nodegroup
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: "invalid",
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}, model.ErrInvalid)
 			// invalid quotas
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
 				Quotas:    map[model.Resource]uint64{"invalid": 8},
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}, model.ErrInvalid)
 			// invalid users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
@@ -122,14 +112,14 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			// duplicate users
 			testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []model.WorkspaceUser{{Username: "user1"}, {Username: "user1"}},
+				Users:     []string{"user1", "user1"},
 			}, model.ErrInvalid)
 		},
 
 		"update-invalid": func(t *testing.T, wsSvc model.WorkspaceService) {
 			id := testWorkspaceCreate(t, wsSvc, &model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}, nil)
 
 			// invalid nodegroup
@@ -217,30 +207,28 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 		"userfilter": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws1 := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}
 			ws1.ID = testWorkspaceCreate(t, wsSvc, &ws1, nil)
 			ws1.Request = ws1.InitialRequest()
 
 			ws2 := model.Workspace{
 				Nodegroup: model.NodegroupGraduate,
-				Users:     []model.WorkspaceUser{{Username: "user2"}},
+				Users:     []string{"user2"},
 			}
 			ws2.ID = testWorkspaceCreate(t, wsSvc, &ws2, nil)
 			ws2.Request = ws2.InitialRequest()
 
 			wsAll := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []model.WorkspaceUser{{Username: "user1"}, {Username: "user2"}},
+				Users:     []string{"user1", "user2"},
 			}
 			wsAll.ID = testWorkspaceCreate(t, wsSvc, &wsAll, nil)
 			wsAll.Request = wsAll.InitialRequest()
 
 			testWorkspaceListAll(t, wsSvc, []*model.Workspace{&ws1, &ws2, &wsAll})
-			// user1 sees ws1 (accepted) and wsAll (accepted as creator)
 			testWorkspaceListUser(t, wsSvc, "user1", []*model.Workspace{&ws1, &wsAll})
-			// user2 only sees ws2 (accepted) - not wsAll where they're pending
-			testWorkspaceListUser(t, wsSvc, "user2", []*model.Workspace{&ws2})
+			testWorkspaceListUser(t, wsSvc, "user2", []*model.Workspace{&ws2, &wsAll})
 			testWorkspaceListUser(t, wsSvc, "user3", nil)
 
 			testWorkspaceGet(t, wsSvc, ws1.ID, &ws1)
@@ -250,8 +238,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 			testWorkspaceGetUser(t, wsSvc, ws1.ID, "user2", nil)
 			testWorkspaceGetUser(t, wsSvc, ws2.ID, "user1", nil)
 			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user1", &wsAll)
-			// user2 cannot access wsAll - they're pending there
-			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user2", nil)
+			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user2", &wsAll)
 			testWorkspaceGetUser(t, wsSvc, wsAll.ID, "user3", nil)
 
 			testWorkspaceRequestUpdate(t, wsSvc, &model.WorkspaceUpdate{
@@ -265,7 +252,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 		"enabled-created": func(t *testing.T, wsSvc model.WorkspaceService) {
 			ws := model.Workspace{
 				Nodegroup: model.NodegroupUndergraduate,
-				Users:     []model.WorkspaceUser{{Username: "user1"}},
+				Users:     []string{"user1"},
 			}
 			ws.ID = testWorkspaceCreate(t, wsSvc, &ws, nil)
 
@@ -275,7 +262,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				WorkspaceID: ws.ID,
 				Enabled:     true,
 				Nodegroup:   ws.Nodegroup,
-				Users:       model.Usernames(ws.Users),
+				Users:       ws.Users,
 			}, &ws, nil)
 
 			ws.Enabled = false
@@ -283,7 +270,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 				WorkspaceID: ws.ID,
 				Enabled:     false,
 				Nodegroup:   ws.Nodegroup,
-				Users:       model.Usernames(ws.Users),
+				Users:       ws.Users,
 			}, &ws, nil)
 		},
 	}
@@ -297,8 +284,7 @@ func TestWorkspace(t *testing.T, wsf func() model.WorkspaceService) {
 
 func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.Workspace, expErr error) model.ID {
 	t.Helper()
-	const creatorEmail = "test@example.com"
-	got, err := wsSvc.CreateWorkspace(context.Background(), ws, creatorEmail)
+	got, err := wsSvc.CreateWorkspace(context.Background(), ws)
 	if !errors.Is(err, expErr) {
 		t.Fatalf("CreateWorkspace(%#v) = %v; want %v", ws, err, expErr)
 	}
@@ -309,20 +295,9 @@ func testWorkspaceCreate(t *testing.T, wsSvc model.WorkspaceService, ws *model.W
 	want := *ws
 	want.ID = got.ID
 	want.Enabled = false
-	// Creator (first user) gets their email set
-	if len(want.Users) > 0 {
-		want.Users = make([]model.WorkspaceUser, len(ws.Users))
-		copy(want.Users, ws.Users)
-		want.Users[0].Email = creatorEmail
-	}
 	want.Request = want.InitialRequest()
 	if diff := cmp.Diff(got, &want, cmpopts.EquateEmpty()); diff != "" {
 		t.Fatalf("CreateWorkspace(%#v) = mismatch\n%s", ws, diff)
-	}
-
-	// Update the original workspace for subsequent test assertions
-	if len(ws.Users) > 0 {
-		ws.Users[0].Email = creatorEmail
 	}
 
 	return got.ID

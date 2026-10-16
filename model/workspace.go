@@ -5,27 +5,6 @@ import (
 	"slices"
 )
 
-// WorkspaceUser represents a user in a workspace with their acceptance status.
-// Email being empty indicates a pending invitation.
-type WorkspaceUser struct {
-	Username string
-	Email    string // empty = pending invitation
-}
-
-// IsAccepted returns true if the user has accepted the workspace invitation.
-func (u WorkspaceUser) IsAccepted() bool {
-	return u.Email != ""
-}
-
-// Usernames returns a slice of just the usernames from a WorkspaceUser slice.
-func Usernames(users []WorkspaceUser) []string {
-	result := make([]string, len(users))
-	for i, u := range users {
-		result[i] = u.Username
-	}
-	return result
-}
-
 type Workspace struct {
 	ID
 
@@ -35,7 +14,7 @@ type Workspace struct {
 	Userdata  string
 
 	Quotas map[Resource]uint64
-	Users  []WorkspaceUser
+	Users  []string
 
 	Request *WorkspaceUpdate
 }
@@ -52,7 +31,7 @@ func (ws Workspace) Valid() bool {
 
 	uniqueUsers := make(map[string]struct{})
 	for _, user := range ws.Users {
-		uniqueUsers[user.Username] = struct{}{}
+		uniqueUsers[user] = struct{}{}
 	}
 	if len(uniqueUsers) != len(ws.Users) || len(uniqueUsers) == 0 {
 		return false
@@ -68,18 +47,14 @@ func (ws Workspace) Valid() bool {
 // InitialRequest returns the initial request for a new workspace. It has the
 // same attributes as the workspace itself, but enabled.
 func (ws *Workspace) InitialRequest() *WorkspaceUpdate {
-	usernames := make([]string, len(ws.Users))
-	for i, u := range ws.Users {
-		usernames[i] = u.Username
-	}
 	return &WorkspaceUpdate{
 		WorkspaceID: ws.ID,
-		ByUser:      ws.Users[0].Username,
+		ByUser:      ws.Users[0],
 		Enabled:     true,
 		Nodegroup:   ws.Nodegroup,
 		Userdata:    ws.Userdata,
 		Quotas:      ws.Quotas,
-		Users:       usernames,
+		Users:       ws.Users,
 	}
 }
 
@@ -175,16 +150,14 @@ func (n Nodegroup) AvailableToGroups(groups []string) bool {
 
 type WorkspaceService interface {
 	// Accept user-provided fields only.
-	CreateWorkspace(ctx context.Context, ws *Workspace, creatorEmail string) (*Workspace, error)
+	CreateWorkspace(ctx context.Context, ws *Workspace) (*Workspace, error)
 
 	// Full scan every workspace.
 	ListAllWorkspaces(ctx context.Context) ([]*Workspace, error)
-	// Only list workspaces for a given user (accepted invitations only).
+	// Only list workspaces for a given user.
 	ListUserWorkspaces(ctx context.Context, user string) ([]*Workspace, error)
 	// List all created workspaces.
 	ListCreatedWorkspaces(ctx context.Context) ([]*Workspace, error)
-	// List workspaces where user has pending invitation (email is NULL).
-	ListUserInvitations(ctx context.Context, user string) ([]*Workspace, error)
 
 	GetWorkspace(ctx context.Context, id ID) (*Workspace, error)
 	// Return ErrNotFound if not owned.
@@ -195,28 +168,5 @@ type WorkspaceService interface {
 	// Requetst an update, for uesrs. Ignore admin-controlled fields.
 	RequestUpdateWorkspace(ctx context.Context, upd *WorkspaceUpdate) (*Workspace, error)
 
-	// Accept a workspace invitation (sets email for the user).
-	AcceptInvitation(ctx context.Context, workspaceID ID, username, email string) error
-	// Decline a workspace invitation (removes user from workspace).
-	DeclineInvitation(ctx context.Context, workspaceID ID, username string) error
-
 	DeleteWorkspace(ctx context.Context, id ID) error
-}
-
-// Subscriber represents an admin subscribed to email notifications.
-type Subscriber struct {
-	Username string
-	Email    string
-}
-
-// MailingListService manages admin notification subscriptions.
-type MailingListService interface {
-	// Subscribe adds an admin to the mailing list.
-	Subscribe(ctx context.Context, username, email string) error
-	// Unsubscribe removes an admin from the mailing list.
-	Unsubscribe(ctx context.Context, username string) error
-	// IsSubscribed checks if an admin is subscribed.
-	IsSubscribed(ctx context.Context, username string) (bool, error)
-	// ListSubscribers returns all subscribed admins.
-	ListSubscribers(ctx context.Context) ([]Subscriber, error)
 }

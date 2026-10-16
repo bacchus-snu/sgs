@@ -4,13 +4,12 @@ Query the list of nodes available to you using `kubectl`:
 
 ```console
 $ kubectl get node --selector node-restriction.kubernetes.io/nodegroup=undergraduate
-NAME      STATUS   ROLES    AGE    VERSION
-ferrari   Ready    <none>   21h    v1.30.9
-ford      Ready    <none>   331d   v1.30.4
+NAME   STATUS   ROLES    AGE   VERSION
+ford   Ready    <none>   85d   v1.30.1
 
 $ kubectl get node --selector node-restriction.kubernetes.io/nodegroup=graduate
-NAME      STATUS   ROLES    AGE    VERSION
-bentley   Ready    <none>   215d   v1.30.2
+NAME      STATUS   ROLES    AGE   VERSION
+bentley   Ready    <none>   31d   v1.30.1
 ```
 
 Your containers will automatically be assigned to one of the nodes your

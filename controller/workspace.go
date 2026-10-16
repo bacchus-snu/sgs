@@ -1,17 +1,24 @@
 package controller
 
 import (
-	"log/slog"
+	_ "embed"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/bacchus-snu/sgs/model"
 	"github.com/bacchus-snu/sgs/pkg/auth"
-	"github.com/bacchus-snu/sgs/pkg/email"
 	"github.com/bacchus-snu/sgs/view"
 	"github.com/bacchus-snu/sgs/worker"
+)
+
+var (
+	//go:embed kubeconfig.template
+	kubeconfigTemplate string
+
+	kubeconfig = template.Must(template.New("kubeconfig").Parse(kubeconfigTemplate))
 )
 
 func handleListWorkspaces(
@@ -21,7 +28,6 @@ func handleListWorkspaces(
 		user := c.Get("user").(*auth.User)
 
 		var wss []*model.Workspace
-		var invitations []*model.Workspace
 		var err error
 		if user.IsAdmin() {
 			wss, err = wsSvc.ListAllWorkspaces(c.Request().Context())
@@ -32,15 +38,7 @@ func handleListWorkspaces(
 			return err
 		}
 
-		// Fetch pending invitations for non-admin users
-		if !user.IsAdmin() {
-			invitations, err = wsSvc.ListUserInvitations(c.Request().Context(), user.Username)
-			if err != nil {
-				return err
-			}
-		}
-
-		return c.Render(http.StatusOK, "", view.PageWorkspaceList(wss, invitations))
+		return c.Render(http.StatusOK, "", view.PageWorkspaceList(wss))
 	}
 }
 
@@ -64,7 +62,9 @@ func handleWorkspaceDetails(
 			return err
 		}
 
-		return c.Render(http.StatusOK, "", view.PageWorkspaceDetails(ws))
+		sb := strings.Builder{}
+		kubeconfig.Execute(&sb, ws.ID.Hash())
+		return c.Render(http.StatusOK, "", view.PageWorkspaceDetails(ws, sb.String()))
 	}
 }
 
@@ -88,8 +88,6 @@ func checkNodegroups(user *auth.User, nodegroup string) error {
 
 func handleRequestWorkspace(
 	wsSvc model.WorkspaceService,
-	mlSvc model.MailingListService,
-	emailSvc email.Service,
 ) echo.HandlerFunc {
 	type formData struct {
 		Nodegroup          string `form:"nodegroup"`
@@ -120,7 +118,7 @@ func handleRequestWorkspace(
 				model.ResMemoryRequest:  req.QuotaMemoryRequest,
 				model.ResMemoryLimit:    req.QuotaMemoryLimit,
 			},
-			Users: []model.WorkspaceUser{{Username: user.Username, Email: user.Email}},
+			Users: []string{user.Username},
 		}
 
 		if !ws.Valid() {
@@ -131,22 +129,10 @@ func handleRequestWorkspace(
 			return err
 		}
 
-		newWS, err := wsSvc.CreateWorkspace(c.Request().Context(), &ws, user.Email)
+		newWS, err := wsSvc.CreateWorkspace(c.Request().Context(), &ws)
 		if err != nil {
 			return err
 		}
-
-		// Notify subscribed admins about the new workspace request
-		ctx := c.Request().Context()
-		subscribers, err := mlSvc.ListSubscribers(ctx)
-		if err != nil {
-			slog.Error("failed to list subscribers for notification", "error", err)
-		} else if len(subscribers) > 0 {
-			if err := emailSvc.SendWorkspaceRequestNotification(ctx, newWS, subscribers); err != nil {
-				slog.Error("failed to send workspace request notification", "error", err)
-			}
-		}
-
 		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-details", newWS.ID.Hash()))
 	}
 }
@@ -154,7 +140,6 @@ func handleRequestWorkspace(
 func handleUpdateWorkspace(
 	queue worker.Queue,
 	wsSvc model.WorkspaceService,
-	emailSvc email.Service,
 ) echo.HandlerFunc {
 	type formData struct {
 		Enabled            string `form:"enabled"`
@@ -193,14 +178,6 @@ func handleUpdateWorkspace(
 			return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
 		}
 
-		// Get current workspace state to detect enabled status change
-		ctx := c.Request().Context()
-		oldWS, err := wsSvc.GetWorkspace(ctx, id)
-		if err != nil {
-			return err
-		}
-		wasEnabled := oldWS.Enabled
-
 		upd := model.WorkspaceUpdate{
 			WorkspaceID: id,
 			ByUser:      user.Username,
@@ -221,10 +198,7 @@ func handleUpdateWorkspace(
 			if !strings.HasPrefix(k, "user-") {
 				continue
 			}
-			username := strings.TrimSpace(v[0])
-			if username != "" {
-				upd.Users = append(upd.Users, username)
-			}
+			upd.Users = append(upd.Users, v[0])
 		}
 
 		if !upd.Valid() {
@@ -237,13 +211,12 @@ func handleUpdateWorkspace(
 			if err := checkNodegroups(user, req.Nodegroup); err != nil {
 				return err
 			}
-			upd.Enabled = true // Users always want their workspace enabled
-			ws, err = wsSvc.RequestUpdateWorkspace(ctx, &upd)
+			ws, err = wsSvc.RequestUpdateWorkspace(c.Request().Context(), &upd)
 		case "update":
 			if !user.IsAdmin() {
 				return echo.ErrForbidden
 			}
-			ws, err = wsSvc.UpdateWorkspace(ctx, &upd)
+			ws, err = wsSvc.UpdateWorkspace(c.Request().Context(), &upd)
 		default:
 			return echo.ErrBadRequest
 		}
@@ -254,62 +227,11 @@ func handleUpdateWorkspace(
 		// If not a request, we should re-render
 		if req.Action != "request" {
 			queue.Enqueue()
-
-			// Send approval/denial notification if enabled status changed
-			if !wasEnabled && ws.Enabled {
-				// Workspace was just approved (enabled)
-				if err := emailSvc.SendWorkspaceApprovalNotification(ctx, ws, true); err != nil {
-					slog.Error("failed to send workspace approval notification", "error", err)
-				}
-			} else if wasEnabled && !ws.Enabled {
-				// Workspace was just denied/disabled
-				if err := emailSvc.SendWorkspaceApprovalNotification(ctx, ws, false); err != nil {
-					slog.Error("failed to send workspace denial notification", "error", err)
-				}
-			}
 		}
 
 		// We could render HTML based on the returned ws, but that would make
 		// refreshing the browser potentially dangerous. Instead, redirect with See
 		// Other.
 		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-details", ws.ID.Hash()))
-	}
-}
-
-func handleAcceptInvitation(
-	wsSvc model.WorkspaceService,
-) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		id, err := model.ParseID(c.Param("id"))
-		if err != nil {
-			return echo.ErrNotFound
-		}
-		user := c.Get("user").(*auth.User)
-
-		err = wsSvc.AcceptInvitation(c.Request().Context(), id, user.Username, user.Email)
-		if err != nil {
-			return err
-		}
-
-		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
-	}
-}
-
-func handleDeclineInvitation(
-	wsSvc model.WorkspaceService,
-) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		id, err := model.ParseID(c.Param("id"))
-		if err != nil {
-			return echo.ErrNotFound
-		}
-		user := c.Get("user").(*auth.User)
-
-		err = wsSvc.DeclineInvitation(c.Request().Context(), id, user.Username)
-		if err != nil {
-			return err
-		}
-
-		return c.Redirect(http.StatusSeeOther, c.Echo().Reverse("workspace-list"))
 	}
 }

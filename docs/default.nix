@@ -1,17 +1,14 @@
 { stdenvNoCC, mdbook }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
-  name = "sgs-docs";
+  name = "";
   src = ./.;
 
   nativeBuildInputs = [ mdbook ];
 
   buildPhase = ''
     runHook preBuild
-    # Build English documentation
-    mdbook build en -d "$out"
-    # Build Korean documentation
-    mdbook build ko -d "$out/ko"
+    mdbook build -d "$out"
     runHook postBuild
   '';
 })

@@ -52,7 +52,6 @@ kind: Pod
 metadata:
   name: simple-persistent-shell
 spec:
-  restartPolicy: Never
   terminationGracePeriodSeconds: 1
   containers:
     - name: app
@@ -92,20 +91,6 @@ spec:
       storage: 100Gi
 ```
 
-<div class="warning">
-
-The volume **cannot** be resized after creation. Ensure that you allocate enough
-space for your needs, according to your approved storage quota.
-
-If you need more storage space,
-
-1. Request a temporary storage quota increase.
-2. Create a new PersistentVolumeClaim with the new size.
-3. Copy your data from the old volume to the new volume.
-4. Delete the old PersistentVolumeClaim.
-
-</div>
-
 ```yaml
 # persistent-volume-shell.yaml
 apiVersion: v1
@@ -113,7 +98,6 @@ kind: Pod
 metadata:
   name: persistent-volume-shell
 spec:
-  restartPolicy: Never
   volumes:
     - name: my-volume
       persistentVolumeClaim:
@@ -161,7 +145,6 @@ kind: Pod
 metadata:
   name: gpu-shell
 spec:
-  restartPolicy: Never
   terminationGracePeriodSeconds: 1
   containers:
     - name: app
@@ -217,7 +200,9 @@ exclusively allocated to your pod as long as this pod is running.
 
 <div class="warning">
 
-A pod with allocated GPUs is **automatically terminated if it does not use the GPU for 30 minutes or more**. For work that does not use the GPU, run a pod without GPU allocation. Running workloads unrelated to your research on the GPU to avoid automatic termination is prohibited. Furthermore, your access may be permanently restricted. We actively monitor GPU utilization and take action if
+If you allocate GPU resources but let the GPU idle for extended periods of time,
+**we will terminate your pod without warning**. Furthermore, your access may be
+permanently restricted. We actively monitor GPU utilization and take action if
 we detect abuse.
 
 This warning also applies for "guaranteed" CPU or memory quotas.
@@ -308,52 +293,3 @@ persistent volume.
 Completed pods do not use node resources. Still, it is a good idea to clean up
 completed pods you are no longer using, as they can clutter your namespace and
 may result in name collisions.
-
-## Increasing shared memory for PyTorch DataLoader
-
-By default, `/dev/shm` (shared memory) is limited to 64MB. This can cause issues
-when using PyTorch's DataLoader with multiple workers (`num_workers > 0`), as it
-relies on shared memory for inter-process communication.
-
-To increase the shared memory size, mount an `emptyDir` volume with `medium: Memory`:
-
-```yaml
-# pytorch-workload.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: pytorch-workload
-spec:
-  terminationGracePeriodSeconds: 1
-  restartPolicy: Never
-  volumes:
-    - name: dshm
-      emptyDir:
-        medium: Memory
-  containers:
-    - name: app
-      image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
-      command: ['/bin/bash', '-c', 'df -h /dev/shm && python train.py']
-      resources:
-        limits:
-          nvidia.com/gpu: 1
-      volumeMounts:
-        - name: dshm
-          mountPath: /dev/shm
-```
-
-This mounts a memory-backed filesystem at `/dev/shm`, allowing it to use
-available memory instead of being limited to 64MB. You can verify the change:
-
-```console
-$ kubectl exec -it pytorch-workload -- df -h /dev/shm
-Filesystem      Size  Used Avail Use% Mounted on
-shm             125G     0  125G   0% /dev/shm
-```
-
-<div class="warning">
-
-The memory used by `/dev/shm` counts against your pod's memory limit. Ensure
-your pod has sufficient memory allocated.
-
-</div>

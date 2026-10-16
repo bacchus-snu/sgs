@@ -14,7 +14,6 @@ import (
 	"github.com/bacchus-snu/sgs/model/postgres"
 	"github.com/bacchus-snu/sgs/pkg/auth"
 	"github.com/bacchus-snu/sgs/pkg/config"
-	"github.com/bacchus-snu/sgs/pkg/email"
 	"github.com/bacchus-snu/sgs/worker"
 )
 
@@ -63,11 +62,8 @@ func run(ctx context.Context) error {
 		queueErrCh <- queue.Start(ctx)
 	}()
 
-	// Initialize email service
-	emailSvc := email.NewSMTPService(cfg.Email)
-
 	e := echo.New()
-	controller.AddRoutes(e, cfg.Controller, queue, authSvc, repo.Workspaces(), repo.MailingList(), emailSvc)
+	controller.AddRoutes(e, cfg.Controller, queue, authSvc, repo.Workspaces())
 
 	startErrCh := make(chan error, 1)
 	go func() {

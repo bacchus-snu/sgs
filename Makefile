@@ -1,7 +1,7 @@
 CSS_SRC := view/static/styles.css
 CSS_DST := view/static/dist/styles.css
 
-BINS := sgs sgs-register-harbor sgs-runtime-wrapper
+BINS := sgs sgs-register-harbor
 
 .PHONY: all
 all: generate build
@@ -19,19 +19,14 @@ sgs:
 	go build -o ./sgs ./cmd/sgs
 sgs-register-harbor:
 	go build -o ./sgs-register-harbor ./cmd/sgs-register-harbor
-sgs-runtime-wrapper:
-	CGO_ENABLED=0 go build -o ./sgs-runtime-wrapper ./cmd/sgs-runtime-wrapper
 
 .PHONY: hotreload
 hotreload:
 	env $$(<.env.development xargs) air
 
-.PHONY: serve-docs serve-docs-en serve-docs-ko
-serve-docs: serve-docs-en
-serve-docs-en:
-	mdbook serve docs/en
-serve-docs-ko:
-	mdbook serve docs/ko
+.PHONY: serve-docs
+serve-docs:
+	mdbook serve docs
 
 .PHONY: check
 check:
