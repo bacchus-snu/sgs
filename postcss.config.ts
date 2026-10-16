@@ -1,12 +1,6 @@
 import type { Config } from 'postcss-load-config'
-import tailwindcss from 'tailwindcss'
-import autoprefixer from 'autoprefixer'
-import cssnano from 'cssnano'
+import tailwindcss from '@tailwindcss/postcss'
 
 export default {
-	plugins: [
-		tailwindcss(),
-		autoprefixer(),
-		...(process.env.NODE_ENV === 'production' ? [cssnano()] : []),
-	],
+	plugins: [tailwindcss()],
 } satisfies Config

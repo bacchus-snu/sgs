@@ -1,3 +1,28 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss" source(none);
+@source "../**/*.templ";
+@plugin "@tailwindcss/forms";
+
+@theme {
+	--font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+	--color-red-200: #fecaca;
+	--color-red-600: #dc2626;
+	--color-red-700: #b91c1c;
+	--color-amber-200: #fde68a;
+	--color-amber-700: #b45309;
+	--color-green-200: #bbf7d0;
+	--color-green-700: #15803d;
+	--color-blue-200: #bfdbfe;
+	--color-blue-500: #3b82f6;
+	--color-blue-600: #2563eb;
+	--color-blue-700: #1d4ed8;
+	--color-gray-200: #e5e7eb;
+	--color-gray-300: #d1d5db;
+	--color-gray-500: #6b7280;
+	--color-gray-600: #4b5563;
+}
+
+@layer base {
+	button:not(:disabled) {
+		cursor: pointer;
+	}
+}

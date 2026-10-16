@@ -2,8 +2,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    templ.url = "github:a-h/templ/v0.2.747";
+    templ.url = "github:a-h/templ/v0.3.1070";
     templ.inputs.nixpkgs.follows = "nixpkgs";
+    templ.inputs.nixpkgs-unstable.follows = "nixpkgs";
   };
 
   outputs =
@@ -25,7 +26,7 @@
       {
         packages = {
           default = selfPkgs.sgs;
-          sgs = pkgs.callPackage ./. { };
+          sgs = pkgs.callPackage ./. { buildGoModule = pkgs.buildGo127Module; };
           sgs-docs = pkgs.callPackage ./docs { };
           image = pkgs.callPackage ./image.nix { inherit (selfPkgs) sgs; };
         };
