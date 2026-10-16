@@ -28,6 +28,13 @@ Your containers may be terminated, without warning, at any time. To prevent data
 loss, ensure all important data is stored in persistent volumes. We cannot
 recover lost data from terminated containers.
 
+## Workload policy
+
+- A pod with allocated GPUs is automatically terminated if it does not use the GPU for 30 minutes or more. For work that does not use the GPU, run a pod without GPU allocation.
+- Running workloads unrelated to your research on the GPU to avoid automatic termination is prohibited.
+- Your pods may be preempted to free resources for pods used in courses.
+- Deployments and StatefulSets cannot be used.
+
 ## Resource policy
 
 There are two types of quotas: guaranteed (including GPU and storage) and
