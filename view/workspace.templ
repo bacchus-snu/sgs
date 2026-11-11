@@ -23,6 +23,17 @@ var (
 
 templ PageWorkspaceList(wss []*model.Workspace) {
 	@page("Workspaces") {
+		<div class="mb-4 rounded-sm border border-red-700 bg-red-200 p-4" role="alert">
+			<p class="font-bold">Service termination notice</p>
+			<p>
+				SGS is scheduled to shut down on November 20, 2026.
+				All workspace data will be deleted, so back up anything you need before that date.
+			</p>
+			<p>
+				All graduate nodes are down until the shutdown.
+				Request new workspaces in the undergraduate nodegroup.
+			</p>
+		</div>
 		<h1 class="mb-4 text-xl font-bold">My workspaces</h1>
 		<ul class="mx-auto max-w-3xl space-y-4">
 			for _, ws := range wss {

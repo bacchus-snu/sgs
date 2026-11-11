@@ -8,7 +8,7 @@
 
 <div class="warning">
 
-The "bentley" node (`graduate` nodegroup) and the "porsche" node (`undergraduate` nodegroup) are temporarily unavailable. Graduate researchers should request a workspace in the `graduate` nodegroup. Bacchus will change the workspace to the `undergraduate` nodegroup.
+The `graduate` nodegroup has no available nodes. Graduate researchers should request a workspace in the `undergraduate` nodegroup. The "porsche" node (`undergraduate` nodegroup) is temporarily unavailable.
 
 </div>
 
@@ -39,7 +39,7 @@ requests, change requests will be reviewed by Bacchus volunteers.
 
 When submitting a request for GPU resources, please provide a concise explanation of how the allocated resources will be utilized to support your research objectives. This justification should include:
 
-- If you are requesting a workspace in `graduate` Nodegroup, it is mandatory to provide the name of your advisor and/or the name of the principal investigator (PI) of the project.
+- If you are a graduate researcher, it is mandatory to provide the name of your advisor and/or the name of the principal investigator (PI) of the project.
 - A brief overview of your research project, including its goals and objectives.
 - If you (or your team) are targeting a specific journal or conference, please include the CfP(Call for Papers) URL.
   - This may help us to prioritize your resource request accordingly if the deadlines are nearer.

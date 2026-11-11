@@ -145,6 +145,9 @@ func (n Nodegroup) AvailableToGroups(groups []string) bool {
 	if !n.Valid() {
 		return false
 	}
+	if n == NodegroupUndergraduate && slices.Contains(groups, string(NodegroupGraduate)) {
+		return true
+	}
 	return slices.Contains(groups, string(n)) || slices.Contains(groups, UserGroupProfessor)
 }
 

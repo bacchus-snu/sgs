@@ -48,7 +48,7 @@ The node group for graduate researchers includes the "bentley" node.
 
 <div class="warning">
 
-The "bentley" node is temporarily unavailable. Graduate researchers should request a workspace in the `graduate` nodegroup. Bacchus will change the workspace to the `undergraduate` nodegroup.
+The "bentley" node is unavailable. Graduate researchers should request a workspace in the `undergraduate` nodegroup.
 
 </div>
 
